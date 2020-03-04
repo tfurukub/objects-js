@@ -1,0 +1,43 @@
+# App Architecture
+#
+# Prism ----(API)-----+--> Collector --(API)--> Tree --(API)--> Web --(Static,API)--> Browser
+#                     |  
+# CVM ----(Paramiko)--+
+#
+# Collector
+# - vdisk_config_printer
+# - stats_collector
+# - API: /vms
+# - API: /pds
+# - API: /images
+
+version: '3.7'
+services:
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: web
+    ports:
+    - 80:80
+    environment:
+      PORT: 80
+      APP_SERVER: http://app_boto3:80
+    volumes:
+    - ./web/html:/usr/share/nginx/html/:z
+    depends_on:
+    - app_boto3
+
+  app_boto3:
+    build:
+      context: ./boto3
+      dockerfile: Dockerfile
+    container_name: app_boto3
+    ports:
+    - 8080:80
+    environment:
+      PORT: 80
+      DEBUG: "True"
+    volumes:
+    - ./boto3/src:/src:z

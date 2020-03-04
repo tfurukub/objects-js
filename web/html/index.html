@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Object Viewer</title>
+    <link  href="/static/favicon.ico" rel="icon" type="image/vnd.microsoft.icon">
+    <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
+    <script src="/static/js/jquery-2.2.4.min.js"></script>
+    <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
+    <script src="/static/js/bootstrap-4.3.1.min.js"></script>
+    <script src="/static/js/bucket_list.js"></script>
+  </head>
+
+  <body>
+      <nav class="navbar navbar-expand-lg navbar-dark" 
+        style="background-color: #22272E; margin-bottom: 25px">
+        <a class="navbar-brand" href="/">
+            Object Viewer
+        </a>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" 
+          data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" 
+          aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item" id="nav-heatmap">
+              <a class="nav-link" href="/">HeatMap</a>
+            </li>
+            <li class="nav-item" id="nav-ranking">
+              <a class="nav-link" href="/ranking.html">Ranking</a>
+            </li>
+            <li class="nav-item" id="nav-vms">
+              <a class="nav-link" href="/vms.html">VM</a>
+            </li>
+            <li class="nav-item" id="nav-pds">
+              <a class="nav-link" href="/pds.html">PD</a>
+            </li>
+            <li class="nav-item" id="nav-images">
+              <a class="nav-link" href="/images.html">Images</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+    <div class="container">
+      <!-- content start from here -->
+
+<div class="row">
+  <div class="col-8">
+    <h2>Object List</h2>
+    <table class="table table-striped table-bordered" style="width:100%">
+      <tr>
+        <th>Num</th>
+        <th>Key</th>
+        <th>Size</th>
+      </tr>
+      <tbody id="list">
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-4">
+    <div class="widget">
+      <h2 class="text-center">KEY Information</h2>
+      <hr>
+      <div class="form-group">
+        <label for="endpoint_url">URL:</label>
+        <input type="text" id="endpoint_url" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="access_key">ACCESS KEY:</label>
+        <input type="text" id="access_key" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="secret_key">SECRET KEY:</label>
+        <input type="text" id="secret_key" class="form-control">
+      </div>
+      <div class="control-group">
+        <div class="controls">
+          <button id="update" type="button">更新</button>
+        </div>
+      </div>
+      <h2 class="text-center">Select Bucket</h2>
+      <hr>
+      <select class="form-control" id="bucket-select">
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+  draw_bucket_list()
+  $('#bucket-select').change(bucket_changed)
+  $('#update').click(update_key)
+</script>
+
+      <!-- content end here -->
+
+    </div>
+  </body>
+
+  <script>
+    $('#nav-heatmap').removeClass("active");
+    $('#nav-vms').removeClass("active");
+    $('#nav-images').removeClass("active");
+    $('#nav-pds').removeClass("active");
+    $('#nav-ranking').removeClass("active");
+
+    switch(window.location.pathname){
+      case '/':
+      case '/index.html':
+        $('#nav-heatmap').addClass("active");
+        break
+      case '/vms.html':
+        $('#nav-vms').addClass("active");
+        break
+      case '/images.html':
+        $('#nav-images').addClass("active");
+        break
+      case '/pds.html':
+        $('#nav-pds').addClass("active");
+        break
+      case '/ranking.html':
+        $('#nav-ranking').addClass("active");
+        break      
+      default:
+        console.log('url error')
+    }
+  </script>
+</html>
