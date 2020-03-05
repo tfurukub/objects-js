@@ -24,6 +24,7 @@ def configure_info():
     body = request.get_data().decode().strip()
     d = json.loads(body)
     OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
+    print(d)
     return (jsonify({}), 200)
 
 #
@@ -32,8 +33,10 @@ def configure_info():
 
 @app.route('/api/v1/bucket/',methods=['GET'])
 def bucket_list():
+    print(OBJECT_BOTO3.accesskey,OBJECT_BOTO3.secretkey,OBJECT_BOTO3.endpoint)
     s3resource = OBJECT_BOTO3.boto3_session()
     b_list = OBJECT_BOTO3.list_bucket(s3resource)
+    print(b_list)
     return jsonify(b_list)
 
 @app.route('/api/v1/bucket/object/<bucket_name>/',methods=['GET'])

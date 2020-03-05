@@ -67,21 +67,24 @@
       <hr>
       <div class="form-group">
         <label for="endpoint_url">URL:</label>
-        <input type="text" id="endpoint_url" class="form-control">
+        <input type="text" id="endpoint_url" class="form-control" value="10.149.81.1">
       </div>
       <div class="form-group">
         <label for="access_key">ACCESS KEY:</label>
-        <input type="text" id="access_key" class="form-control">
+        <input type="text" id="access_key" class="form-control" value="CSv6QuzxwEDUu50iFgEWeInum2uHpNfK">
       </div>
       <div class="form-group">
         <label for="secret_key">SECRET KEY:</label>
-        <input type="text" id="secret_key" class="form-control">
+        <input type="text" id="secret_key" class="form-control" value="JIUMcFUybN160Lk0ihgxPsbKu_zwae_y">
       </div>
       <div class="control-group">
         <div class="controls">
           <button id="update" type="button">更新</button>
         </div>
       </div>
+      <form name="myform">
+        <input class="file_input" id="info_file" type="file" />
+      </form>
       <h2 class="text-center">Select Bucket</h2>
       <hr>
       <select class="form-control" id="bucket-select">
@@ -91,9 +94,10 @@
 </div>
 
 <script>
-  draw_bucket_list()
+  //draw_bucket_list()
   $('#bucket-select').change(bucket_changed)
   $('#update').click(update_key)
+  $('#info_file').change(parse_info_file)
 </script>
 
       <!-- content end here -->
