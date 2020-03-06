@@ -3,29 +3,87 @@ let draw_bucket_list = function(){
     success:function(j, status, xhr){
       draw_bucket_list2(j)
     }, 
-    error:function(d){
-      console.log("ERROR")
+    error:function(j){
+      console.log(j)
     }
   })
 }
 
 let draw_bucket_list2 = function(data){
-  $('#buckert-select').empty()
+  $('#bucket-select').empty()
   $("#bucket-select").append($("<option>").val('').text(''))
   data.forEach(function(b_name){
     $("#bucket-select").append($("<option>").val(b_name).text(b_name))
   })
+  $('#number_of_buckets').empty()
+  $('#number_of_buckets').append('# of Buckets = '+data.length)
 }
 
 let draw_object_list = function(data){
-  $('#list').empty()
+  $('#object_list').empty()
   k = 1
   for (key in data){
     items = [k,key,convertByteSize(data[key])]
     txt = createbody(items)
-    $('#list').append(txt)
+    $('#object_list').append(txt)
     k++
   }
+}
+
+let create_bucket = function(){
+  var bucket_name = $('#buckets').val()
+  $.ajax({type:'put', url:'/api/v1/bucket/'+bucket_name,
+    success:function(j, status, xhr){
+      draw_bucket_list()
+    }, 
+    error:function(j){
+      console.log(j)
+    }
+  })
+}
+
+let delete_bucket = function(){
+  var bucket_name = $('#buckets').val()
+  $.ajax({type:'delete', url:'/api/v1/bucket/'+bucket_name,
+    success:function(j, status, xhr){
+      bucket_changed()
+    }, 
+    error:function(j){
+      console.log(j)
+    }
+  })
+}
+
+let upload_files = function(){
+  file_name = this.files[0].name
+  var file = $('#upload_file').get(0).files[0]
+  var formData = new FormData
+  formData.append(file_name,file)
+  
+  $.ajax({type:'post',url:'/api/v1/bucket/object/upload/furukubo/'+file_name+'/',data:formData,contentType:false,processData:false,
+    success: function(){
+      $('#bucket-select').change()
+      alert('uploaded')
+    }
+  })
+}
+
+let delete_files = function(){
+  if($("input[name=r_chk]:checked").length == 0){
+    alert('Please select files')
+  }
+  $("input[name=r_chk]:checked").each(function(){
+    f = $(this).val()
+    $.ajax({type:'post', url:'/api/v1/bucket/object/delete/furukubo/'+f+'/',
+    success:function(j, status, xhr){
+      $('#bucket-select').change()
+    }, 
+    error:function(j){
+      console.log(j)
+    }
+  })
+  })
+
 }
 
 let bucket_changed = function(){
@@ -93,14 +151,9 @@ let parse_info_file = function(){
 }
 
 let createbody = function(items){
-  txt = '<tr><td>'
-  num = 0
+  txt = '<tr><td><input type=\"checkbox\" value=\"'+items[1]+'\" name=\"r_chk\"></td><td>'
   items.forEach(function(item){
-      if(num == 1 && isNaN(item) == false){
-          txt = txt.slice(0,-4) + '<td id="' + item + '">'
-      }
-      txt += item + '</td><td>'
-      num++
+        txt += item + '</td><td>'
   })
   txt = txt.slice(0,-4)+'</tr>'
   return txt

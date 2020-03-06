@@ -12,51 +12,21 @@
   </head>
 
   <body>
-      <nav class="navbar navbar-expand-lg navbar-dark" 
-        style="background-color: #22272E; margin-bottom: 25px">
-        <a class="navbar-brand" href="/">
-            Object Viewer
-        </a>
-
-        <button class="navbar-toggler" type="button" data-toggle="collapse" 
-          data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" 
-          aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav">
-            <li class="nav-item" id="nav-heatmap">
-              <a class="nav-link" href="/">HeatMap</a>
-            </li>
-            <li class="nav-item" id="nav-ranking">
-              <a class="nav-link" href="/ranking.html">Ranking</a>
-            </li>
-            <li class="nav-item" id="nav-vms">
-              <a class="nav-link" href="/vms.html">VM</a>
-            </li>
-            <li class="nav-item" id="nav-pds">
-              <a class="nav-link" href="/pds.html">PD</a>
-            </li>
-            <li class="nav-item" id="nav-images">
-              <a class="nav-link" href="/images.html">Images</a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-
     <div class="container">
-      <!-- content start from here -->
 
 <div class="row">
   <div class="col-8">
     <h2>Object List</h2>
+    <button id="delete_files" value="DELETE_FILE">DELETE FILE</button>
+    <hr>
     <table class="table table-striped table-bordered" style="width:100%">
       <tr>
+        <th>check</th>
         <th>Num</th>
         <th>Key</th>
         <th>Size</th>
       </tr>
-      <tbody id="list">
+      <tbody id="object_list">
       </tbody>
     </table>
   </div>
@@ -64,6 +34,12 @@
   <div class="col-4">
     <div class="widget">
       <h2 class="text-center">KEY Information</h2>
+      <hr>
+      <form name="myform">
+        <label>Upload the generated keys
+        <input class="file_input" id="info_file" type="file"/>
+        </label>
+      </form>
       <hr>
       <div class="form-group">
         <label for="endpoint_url">URL:</label>
@@ -79,58 +55,41 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <button id="update" type="button">更新</button>
+          <button id="update" type="button">Connect to Objects</button>
         </div>
       </div>
-      <form name="myform">
-        <input class="file_input" id="info_file" type="file" />
-      </form>
+      <hr>
       <h2 class="text-center">Select Bucket</h2>
       <hr>
       <select class="form-control" id="bucket-select">
       </select>
+      <p id="number_of_buckets">Not Connected To Nutanix Objects</p>
+      <hr>
+      <h2 class="text-center">Create/Delete Bucket</h2>
+      <div class="form-group">
+        <p>Bucket Name</p>
+        <input type="text" id="buckets" class="form-control">
+        <button id="create_bucket_button" type="button">CREATE</button>
+        <button id="delete_bucket_button" type="button">DELETE</button>
+      </div>
+      <hr>
+      <label>Upload the file
+        <input class="upload_file" id="upload_file" type="file"/>
+      </label>
     </div>
   </div>
 </div>
 
 <script>
-  //draw_bucket_list()
   $('#bucket-select').change(bucket_changed)
   $('#update').click(update_key)
   $('#info_file').change(parse_info_file)
+  $('#create_bucket_button').click(create_bucket)
+  $('#delete_bucket_button').click(delete_bucket)
+  $('#upload_file').change(upload_files)
+  $('#delete_files').click(delete_files)
 </script>
-
-      <!-- content end here -->
 
     </div>
   </body>
-
-  <script>
-    $('#nav-heatmap').removeClass("active");
-    $('#nav-vms').removeClass("active");
-    $('#nav-images').removeClass("active");
-    $('#nav-pds').removeClass("active");
-    $('#nav-ranking').removeClass("active");
-
-    switch(window.location.pathname){
-      case '/':
-      case '/index.html':
-        $('#nav-heatmap').addClass("active");
-        break
-      case '/vms.html':
-        $('#nav-vms').addClass("active");
-        break
-      case '/images.html':
-        $('#nav-images').addClass("active");
-        break
-      case '/pds.html':
-        $('#nav-pds').addClass("active");
-        break
-      case '/ranking.html':
-        $('#nav-ranking').addClass("active");
-        break      
-      default:
-        console.log('url error')
-    }
-  </script>
 </html>

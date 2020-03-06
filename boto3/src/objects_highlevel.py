@@ -17,56 +17,66 @@ import datetime
 from boto3.session import Session
 import sys
 
-class ProgressPercentage(object):
-
-    def __init__(self, filename,file_size):
-        self._filename = filename
-        self._size = float(file_size)
-        self._seen_so_far = 0
-        self._lock = threading.Lock()
-
-    def __call__(self, bytes_amount):
-        # To simplify we'll assume this is hooked up
-        # to a single filename.
-        with self._lock:
-            self._seen_so_far += bytes_amount
-            percentage = (self._seen_so_far / self._size) * 100
-            sys.stdout.write(
-                "\r%s  %s / %s  (%.2f%%)" % (
-                    self._filename, self._seen_so_far, self._size,
-                    percentage))
-            sys.stdout.flush()
-
 class Objects_boto3():
     def __init__(self,accesskey,secretkey,endpoint):
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
     
-    #def boto3_session(self,accesskey,secretkey,endpoint):
     def boto3_session(self):
-        #argv = sys.argv
         #boto3.set_stream_logger()
         #botocore.session.Session().set_debug_logger()
-        session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-        s3resource = session.resource('s3',endpoint_url=self.endpoint)
-        return s3resource
+        try:
+            print('print information')
+            print(self.accesskey,self.secretkey,self.endpoint)
+            session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
+            s3resource = session.resource('s3',endpoint_url=self.endpoint)
+        except ClientError as e:
+            print(e)
+            return e
+        else:
+            return s3resource
 
-    def list_bucket(self,s3resource):
-        session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-        s3resource = session.resource('s3',endpoint_url=self.endpoint)
+    def list_bucket(self):
+        s3resource = self.boto3_session()
         bucket_list = []
         for bucket in s3resource.buckets.all():
             bucket_list.append(bucket.name)
         return bucket_list
 
-    def list_object(self,s3resource,bucket_name):
+    def create_bucket(self,bucket_name):
+        s3resource = self.boto3_session()
+        result = s3resource.Bucket(bucket_name).create()
+        return result
+
+    def delete_bucket(self,bucket_name):
+        s3resource = self.boto3_session()
+        result = s3resource.Bucket(bucket_name).delete()
+        return result
+
+    def list_object(self,bucket_name):
+        s3resource = self.boto3_session()
         object_list = {}
         bucket = s3resource.Bucket(bucket_name)
         for obj in bucket.objects.all():
             object_list[obj.key] = obj.size
         #print(object_list)
         return object_list
+
+    def upload_file(self,bucket_name,file_name):
+        s3resource = self.boto3_session()
+        local_file = '/src/'+file_name
+        if os.path.exists(local_file):
+            result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name)
+            os.remove(local_file)
+            return result
+        else:
+            return('No File Exist. Can not upload')
+
+    def delete_file(self,bucket_name,file_name):
+        s3resource = self.boto3_session()
+        result = s3resource.Object(bucket_name,file_name).delete()
+        return result
 
     def update_info(self,accesskey,secretkey,endpoint):
         self.accesskey = accesskey
@@ -110,7 +120,3 @@ class Objects_boto3():
     except ClientError as e:
         print("Unexpected error: %s" % e)
 '''
-if __name__ == "__main__":
-    OBJECT_BOTO3 =  Objects_boto3()
-    s3resource = OBJECT_BOTO3.boto3_session('CSv6QuzxwEDUu50iFgEWeInum2uHpNfK','JIUMcFUybN160Lk0ihgxPsbKu_zwae_y','http://10.149.81.1')
-    b_list = OBJECT_BOTO3.list_bucket(s3resource)
