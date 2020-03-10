@@ -7,6 +7,8 @@ events {
 }
 
 http {
+  client_max_body_size 10000M;
+  client_body_temp_path /usr/share/nginx/html;
   include       /etc/nginx/mime.types;
   default_type  application/octet-stream;
   log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
@@ -30,6 +32,7 @@ http {
     proxy_set_header X-Forwarded-Server $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     location /api/v1/ {
+      proxy_request_buffering off;
       proxy_pass {{APP_SERVER}};
     }
   }

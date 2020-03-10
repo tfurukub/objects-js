@@ -58,14 +58,28 @@ let upload_files = function(){
   file_name = this.files[0].name
   var file = $('#upload_file').get(0).files[0]
   var formData = new FormData
-  formData.append(file_name,file)
+  chunk_size = 1024*1024*10
+  chunk_number = Math.ceil(file.size/chunk_size)
+  console.log(chunk_number)
+  slice_index = 0
+  for(i=0;i<chunk_number;i++){
+    if(slice_index+chunk_size < file.size){
+      file_part = file.slice(slice_index,slice_index+chunk_size)
+      slice_index += chunk_size
+    }else{
+      file_part = file.slice(slice_index,file.size)
+    }
+    prefix = String(i)+'th'
+    sliced_filename = prefix+file_name
+    formData.append(sliced_filename,file_part)
   
-  $.ajax({type:'post',url:'/api/v1/bucket/object/upload/furukubo/'+file_name+'/',data:formData,contentType:false,processData:false,
-    success: function(){
+    $.ajax({type:'post',url:'/api/v1/bucket/object/upload/furukubo/'+sliced_filename+'/',data:formData,contentType:false,processData:false,
+      success: function(){
       $('#bucket-select').change()
       alert('uploaded')
-    }
-  })
+      }
+    })
+  }
 }
 
 let delete_files = function(){
@@ -75,15 +89,14 @@ let delete_files = function(){
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
     $.ajax({type:'post', url:'/api/v1/bucket/object/delete/furukubo/'+f+'/',
-    success:function(j, status, xhr){
-      $('#bucket-select').change()
-    }, 
-    error:function(j){
-      console.log(j)
-    }
+      success:function(j, status, xhr){
+        $('#bucket-select').change()
+      }, 
+      error:function(j){
+        console.log(j)
+      }
+    })
   })
-  })
-
 }
 
 let bucket_changed = function(){
@@ -147,6 +160,20 @@ let parse_info_file = function(){
       secret_key = txt.match(secret_key_pattern)
       $('#secret_key').val(secret_key[1])
     }
+  }
+}
+
+let all_select = function(){
+  $('input[name=r_chk]').prop('checked',this.checked)
+}
+
+let ind_select = function(){
+  if ($('#object_list :checked').length == $('#object_list :input').length) {
+    // 全てのチェックボックスにチェックが入っていたら、「全選択」 = checked  
+    $('#all_checks').prop('checked', true);
+  } else {
+    // 1つでもチェックが入っていたら、「全選択」 = checked
+    $('#all_checks').prop('checked', false);
   }
 }
 

@@ -23,9 +23,8 @@ app = Flask('pdf creator')
 def configure_info():
     body = request.get_data().decode().strip()
     d = json.loads(body)
-    OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
-    print(d)
-    return (jsonify({}), 200)
+    result = OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
+    return jsonify(result)
 
 #
 # Bucket
@@ -33,9 +32,7 @@ def configure_info():
 
 @app.route('/api/v1/bucket/',methods=['GET'])
 def bucket_list():
-    print(OBJECT_BOTO3.accesskey,OBJECT_BOTO3.secretkey,OBJECT_BOTO3.endpoint)
     b_list = OBJECT_BOTO3.list_bucket()
-    print(b_list)
     return jsonify(b_list)
 
 @app.route('/api/v1/bucket/object/<bucket_name>/',methods=['GET'])
@@ -47,25 +44,22 @@ def object_list(bucket_name):
 def buckets(bucket_name):
     if request.method == 'PUT':
         result = OBJECT_BOTO3.create_bucket(bucket_name)
-        print(result)
-        return result
+        return jsonify(result)
     if request.method == 'DELETE':
         result = OBJECT_BOTO3.delete_bucket(bucket_name)
-        print(result)
-        return result
+        return jsonify(result)
 
 @app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>/',methods=['POST'])
 def upload_file(bucket_name,file_name):
     file = request.files[file_name]
     file.save(os.path.join('/src/',file_name))
     result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
-    print(result)
     return(jsonify(result))
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>/',methods=['POST'])
 def delete_file(bucket_name,file_name):
     result = OBJECT_BOTO3.delete_file(bucket_name,file_name)
-    return result
+    return jsonify(result)
 
 #
 # util

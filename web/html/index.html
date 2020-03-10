@@ -21,7 +21,7 @@
     <hr>
     <table class="table table-striped table-bordered" style="width:100%">
       <tr>
-        <th>check</th>
+        <th><input type="checkbox" id="all_checks"></th>
         <th>Num</th>
         <th>Key</th>
         <th>Size</th>
@@ -88,6 +88,8 @@
   $('#delete_bucket_button').click(delete_bucket)
   $('#upload_file').change(upload_files)
   $('#delete_files').click(delete_files)
+  $('#all_checks').click(all_select)
+  $('#object_list').click(ind_select)
 </script>
 
     </div>
