@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import shutil
 from flask import Flask, jsonify, request, make_response
 import objects_highlevel
 
@@ -9,6 +11,7 @@ import objects_highlevel
 ACCESS_KEY = ''
 SECRET_KEY = ''
 ENDPOINT_URL = ''
+SAVE_DIR = '/src/tmp/'
 
 #PORT = int(os.environ['PORT'])
 #DEBUG = os.environ['DEBUG'].lower() == 'true'
@@ -23,8 +26,8 @@ app = Flask('pdf creator')
 def configure_info():
     body = request.get_data().decode().strip()
     d = json.loads(body)
-    result = OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
-    return jsonify(result)
+    OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
+    return jsonify({},200)
 
 #
 # Bucket
@@ -49,12 +52,42 @@ def buckets(bucket_name):
         result = OBJECT_BOTO3.delete_bucket(bucket_name)
         return jsonify(result)
 
-@app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>/',methods=['POST'])
+@app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>',methods=['POST'])
 def upload_file(bucket_name,file_name):
+    if os.path.isdir(SAVE_DIR) == False:
+        os.mkdir(SAVE_DIR)
     file = request.files[file_name]
-    file.save(os.path.join('/src/',file_name))
-    result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
+    file_name = request.args.get('index')+'_'+file_name
+    file.save(os.path.join(SAVE_DIR,file_name))
+    
+    #result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
+    result = ''
     return(jsonify(result))
+
+@app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['POST'])
+def concat_file(bucket_name,file_name):
+    num = 0
+    files = os.listdir(SAVE_DIR)
+    filepath = os.path.join(SAVE_DIR,file_name)
+    files_ordered = []
+    for item in files:
+        pattern = '^(\d+)_'
+        match_result = re.match(pattern,item)
+        if match_result:
+            num = num+1
+            #print(match_result.group(1),item)
+            files_ordered.insert(int(match_result.group(1)),item)
+    #print(files_ordered)
+    
+
+    if str(num) == request.args.get('num'):
+        with open(filepath,'wb') as savefile:
+            for i in range(num):
+                data = open(os.path.join(SAVE_DIR,files_ordered[i]),'rb').read()
+                savefile.write(data)
+                savefile.flush()
+
+    return(jsonify({}))
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>/',methods=['POST'])
 def delete_file(bucket_name,file_name):
@@ -86,4 +119,8 @@ def internal_server_error(error):
 
 if __name__ == '__main__':
     #app.run(debug=DEBUG, host='0.0.0.0', port=PORT)
+    if os.path.isdir(SAVE_DIR):
+        shutil.rmtree(SAVE_DIR)
+
+    os.mkdir(SAVE_DIR)
     app.run(debug='true', host='0.0.0.0', port=80)

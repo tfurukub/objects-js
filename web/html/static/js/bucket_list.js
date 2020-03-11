@@ -17,6 +17,9 @@ let draw_bucket_list2 = function(data){
   })
   $('#number_of_buckets').empty()
   $('#number_of_buckets').append('# of Buckets = '+data.length)
+
+  // 削除予定
+  $('#bucket-select').val('furukubo')
 }
 
 let draw_object_list = function(data){
@@ -28,6 +31,7 @@ let draw_object_list = function(data){
     $('#object_list').append(txt)
     k++
   }
+  ind_select()
 }
 
 let create_bucket = function(){
@@ -58,10 +62,11 @@ let upload_files = function(){
   file_name = this.files[0].name
   var file = $('#upload_file').get(0).files[0]
   var formData = new FormData
-  chunk_size = 1024*1024*10
+  chunk_size = 1024*1024
   chunk_number = Math.ceil(file.size/chunk_size)
-  console.log(chunk_number)
+  //console.log(chunk_number)
   slice_index = 0
+  num_sent = 0
   for(i=0;i<chunk_number;i++){
     if(slice_index+chunk_size < file.size){
       file_part = file.slice(slice_index,slice_index+chunk_size)
@@ -69,14 +74,23 @@ let upload_files = function(){
     }else{
       file_part = file.slice(slice_index,file.size)
     }
-    prefix = String(i)+'th'
-    sliced_filename = prefix+file_name
-    formData.append(sliced_filename,file_part)
-  
-    $.ajax({type:'post',url:'/api/v1/bucket/object/upload/furukubo/'+sliced_filename+'/',data:formData,contentType:false,processData:false,
+    console.log(file_part.size)
+    //sliced_filename = String(i)+'_'+file_name
+    //formData.append(sliced_filename,file_part)
+    formData.append(file_name,file_part)
+    selected_bucket = $('#bucket-select option:selected').text()
+    url_option = selected_bucket+'/'+file_name+'?index='+String(i)
+    $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){
-      $('#bucket-select').change()
-      alert('uploaded')
+        num_sent++
+        if(num_sent == chunk_number){
+          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
+            success: function(){
+              alert(file_name+' Upload Completed')
+              $('#bucket-select').change()
+            }
+          })
+        }
       }
     })
   }
@@ -86,9 +100,10 @@ let delete_files = function(){
   if($("input[name=r_chk]:checked").length == 0){
     alert('Please select files')
   }
+  selected_bucket = $('#bucket-select option:selected').text()
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
-    $.ajax({type:'post', url:'/api/v1/bucket/object/delete/furukubo/'+f+'/',
+    $.ajax({type:'post', url:'/api/v1/bucket/object/delete/'+selected_bucket+'/'+f+'/',
       success:function(j, status, xhr){
         $('#bucket-select').change()
       }, 

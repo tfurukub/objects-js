@@ -22,13 +22,13 @@ class Objects_boto3():
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
+        self.SAVE_DIR = '/src/tmp/'
     
     def boto3_session(self):
         #boto3.set_stream_logger()
         #botocore.session.Session().set_debug_logger()
         try:
-            print('print information')
-            print(self.accesskey,self.secretkey,self.endpoint)
+            #print(self.accesskey,self.secretkey,self.endpoint)
             session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
             s3resource = session.resource('s3',endpoint_url=self.endpoint)
         except ClientError as e:
@@ -65,7 +65,7 @@ class Objects_boto3():
 
     def upload_file(self,bucket_name,file_name):
         s3resource = self.boto3_session()
-        local_file = '/src/'+file_name
+        local_file = self.SAVE_DIR+file_name
         if os.path.exists(local_file):
             result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name)
             os.remove(local_file)
