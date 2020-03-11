@@ -67,17 +67,17 @@ let upload_files = function(){
   //console.log(chunk_number)
   slice_index = 0
   num_sent = 0
-  for(i=0;i<chunk_number;i++){
-    if(slice_index+chunk_size < file.size){
-      file_part = file.slice(slice_index,slice_index+chunk_size)
-      slice_index += chunk_size
-    }else{
-      file_part = file.slice(slice_index,file.size)
-    }
-    console.log(file_part.size)
-    //sliced_filename = String(i)+'_'+file_name
-    //formData.append(sliced_filename,file_part)
-    formData.append(file_name,file_part)
+  console.log('file size = ',file.size)
+  
+  i=0
+  file_part = file.slice(slice_index,slice_index+chunk_size)
+  slice_index += chunk_size
+  console.log(slice_index)
+
+  var reader = new FileReader
+  
+  reader.onload = function(){
+    formData.set(file_name,file_part)
     selected_bucket = $('#bucket-select option:selected').text()
     url_option = selected_bucket+'/'+file_name+'?index='+String(i)
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
@@ -93,7 +93,33 @@ let upload_files = function(){
         }
       }
     })
+    if(slice_index < file.size){
+      file_part = file.slice(slice_index,slice_index+chunk_size)
+      slice_index += chunk_size
+      reader.readAsArrayBuffer(file_part)
+      i++
+    }
   }
+  reader.readAsArrayBuffer(file_part)
+    //sliced_filename = String(i)+'_'+file_name
+    //formData.append(sliced_filename,file_part)
+    /*formData.append(file_name,file_part)
+    selected_bucket = $('#bucket-select option:selected').text()
+    url_option = selected_bucket+'/'+file_name+'?index='+String(i)
+    $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
+      success: function(){
+        num_sent++
+        if(num_sent == chunk_number){
+          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
+            success: function(){
+              alert(file_name+' Upload Completed')
+              $('#bucket-select').change()
+            }
+          })
+        }
+      }
+    })*/
+  
 }
 
 let delete_files = function(){
