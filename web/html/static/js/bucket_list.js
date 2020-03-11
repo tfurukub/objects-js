@@ -83,6 +83,10 @@ let upload_files = function(){
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){
         num_sent++
+        p = (num_sent/chunk_number*100).toFixed(0)
+        $('#status').val(p)
+        $('#info').text(p + "% (" + num_sent*chunk_number*chunk_size + "/" + file.size + "byte)");
+        $('#fallback').text($('#info').text());
         if(num_sent == chunk_number){
           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
             success: function(){
@@ -101,25 +105,6 @@ let upload_files = function(){
     }
   }
   reader.readAsArrayBuffer(file_part)
-    //sliced_filename = String(i)+'_'+file_name
-    //formData.append(sliced_filename,file_part)
-    /*formData.append(file_name,file_part)
-    selected_bucket = $('#bucket-select option:selected').text()
-    url_option = selected_bucket+'/'+file_name+'?index='+String(i)
-    $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
-      success: function(){
-        num_sent++
-        if(num_sent == chunk_number){
-          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
-            success: function(){
-              alert(file_name+' Upload Completed')
-              $('#bucket-select').change()
-            }
-          })
-        }
-      }
-    })*/
-  
 }
 
 let delete_files = function(){
@@ -142,7 +127,7 @@ let delete_files = function(){
 
 let bucket_changed = function(){
   var val = $(this).val()
-  $.ajax({type:'get', url:'/api/v1/bucket/object/' + val,
+  $.ajax({t3ype:'get', url:'/api/v1/bucket/object/' + val,
     success:function(j, status, xhr){
       draw_object_list(j)
     }, 

@@ -75,7 +75,6 @@ def concat_file(bucket_name,file_name):
         match_result = re.match(pattern,item)
         if match_result:
             num = num+1
-            print(match_result.group(1),item)
             files_ordered.insert(int(match_result.group(1)),item)
     
     if str(num) == request.args.get('num'):
@@ -85,6 +84,9 @@ def concat_file(bucket_name,file_name):
                 savefile.write(data)
                 savefile.flush()
     result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
+
+    for item in files_ordered:
+        os.remove(os.path.join(SAVE_DIR,item))
     return(jsonify(result))
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>/',methods=['POST'])
