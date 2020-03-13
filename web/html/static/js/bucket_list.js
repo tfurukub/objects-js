@@ -61,6 +61,7 @@ let delete_bucket = function(){
 
 let upload_files = function(){
   var file_name = this.files[0].name
+  var file_size = this.files[0].size
   var file = $('#upload_file').get(0).files[0]
   var formData = new FormData
   var chunk_size = 1024*1024
@@ -74,21 +75,24 @@ let upload_files = function(){
 
   var selected_bucket
   var url_option
-  var p
-
+  var p_1 = 0
+  var p_2 = 0
+  var check_chunk_status_called = false
   pgb_initialize()
   reader.onload = function(){
     formData.set(file_name,file_part)
     selected_bucket = $('#bucket-select option:selected').text()
-    url_option = selected_bucket+'/'+file_name+'?index='+String(i)
-    
+    url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size
+
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
-      success: function(){
+      success: function(){ 
         num_sent++
-        p = (num_sent/chunk_number*100).toFixed(0)
-        pgb_update(p)
+        p_1 = parseInt((num_sent/chunk_number*100/2).toFixed(0))
+        pgb_update(p_1+p_2)
         if(num_sent == chunk_number){
-          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
+          url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
+          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
+          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
               //alert(file_name+' Upload Completed')
               $('#bucket-select').change()
@@ -97,6 +101,7 @@ let upload_files = function(){
         }
       }
     })
+
     if(slice_index < file.size){
       file_part = file.slice(slice_index,slice_index+chunk_size)
       slice_index += chunk_size
@@ -105,7 +110,26 @@ let upload_files = function(){
     }
   }
   reader.readAsArrayBuffer(file_part)
-  
+}
+
+let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
+  //console.log('setInterval called')
+  p_2 = 0
+  timer = setInterval(function(){
+    url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
+    $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
+      success: function(j){
+        pgb_update(p_1+p_2)
+        if(j['num'] == 0){
+          clearInterval(timer)
+          console.log('cleared')
+        }else{
+          p_2 = parseInt((j['concat_size']/file_size*100/2).toFixed(0))
+          //console.log('p_2=',p_2)
+        }
+      }
+    })
+  },1000)
 }
 
 let delete_files = function(){

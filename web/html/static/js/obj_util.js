@@ -16,16 +16,6 @@ let pgb_initialize = function(){
             $("#lbl",child.document).text("完了しました");
             }
             })
-            /*
-            i=0
-            timer = setInterval(function(){
-                if(i <= 50){
-                    $('#pgb',child.document).progressbar('value',i)
-                    i+=10
-                }else{
-                    clearInterval(timer)
-                }
-            },500)*/
             
     }
     //return child
@@ -33,7 +23,7 @@ let pgb_initialize = function(){
 
 let pgb_update = function(p){
     $('#pgb',child.document).progressbar('value',parseInt(p,10))
-    console.log(p)
+    //console.log(p)
 }
 let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)

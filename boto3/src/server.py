@@ -12,6 +12,7 @@ ACCESS_KEY = ''
 SECRET_KEY = ''
 ENDPOINT_URL = ''
 SAVE_DIR = '/src/tmp/'
+completed = 0
 
 #PORT = int(os.environ['PORT'])
 #DEBUG = os.environ['DEBUG'].lower() == 'true'
@@ -64,30 +65,38 @@ def upload_file(bucket_name,file_name):
     result = ''
     return(jsonify(result))
 
-@app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['POST'])
+@app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['GET','POST'])
 def concat_file(bucket_name,file_name):
-    num = 0
     files = os.listdir(SAVE_DIR)
     filepath = os.path.join(SAVE_DIR,file_name)
-    files_ordered = []
-    for item in files:
-        pattern = '^(\d+)_'+file_name
-        match_result = re.match(pattern,item)
-        if match_result:
-            num = num+1
-            files_ordered.insert(int(match_result.group(1)),item)
     
-    if str(num) == request.args.get('num'):
-        with open(filepath,'wb') as savefile:
-            for i in range(num):
-                data = open(os.path.join(SAVE_DIR,files_ordered[i]),'rb').read()
-                savefile.write(data)
-                savefile.flush()
-    result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
+    if request.method == 'POST':
+        num = 0   
+        files_ordered = []
+        for item in files:
+            pattern = '^(\d+)_'+file_name
+            match_result = re.match(pattern,item)
+            if match_result:
+                num = num+1
+                files_ordered.insert(int(match_result.group(1)),item)
+        
+        if str(num) == request.args.get('num'):
+            with open(filepath,'wb') as savefile:
+                for i in range(num):
+                    data = open(os.path.join(SAVE_DIR,files_ordered[i]),'rb').read()
+                    savefile.write(data)
+                    savefile.flush()
+        result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
 
-    for item in files_ordered:
-        os.remove(os.path.join(SAVE_DIR,item))
-    return(jsonify(result))
+        for item in files_ordered:
+            os.remove(os.path.join(SAVE_DIR,item))
+        return(jsonify(result))
+
+    if request.method == 'GET':
+        concat_size = 0
+        if os.path.isfile(filepath):
+            concat_size = os.path.getsize(filepath)
+        return(jsonify({'num':len(files),'concat_size':concat_size}),200)
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>/',methods=['POST'])
 def delete_file(bucket_name,file_name):
