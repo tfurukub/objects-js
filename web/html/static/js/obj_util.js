@@ -29,33 +29,6 @@ let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
 }
 
-let open_modal = function(){
-    
-    waitingDialog.show('please wait',{rtl:false})
-    i=0
-            timer = setInterval(function(){
-                if(i <= 50){
-                    waitingDialog.progress(i)
-                    i+=10
-                }else{
-                    clearInterval(timer)
-                }
-            },500)
-
-}
-
-let close_modal = function(){
-    var pleaseWait = $('#pleaseWaitDialog'); 
-    
- 
-    
-    hidePleaseWait = function () {
-        pleaseWait.modal('hide');
-    }
-    hidePleaseWait()
-
-}
-
 let all_select = function(){
     $('input[name=r_chk]').prop('checked',this.checked)
 }

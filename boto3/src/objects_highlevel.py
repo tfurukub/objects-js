@@ -17,6 +17,25 @@ import datetime
 from boto3.session import Session
 import sys
 
+percentage = 0.0
+
+class ProgressPercentage(object):
+    
+    def __init__(self, filename,file_size):
+        self._filename = filename
+        self._size = float(file_size)
+        self._seen_so_far = 0
+        self._lock = threading.Lock()
+
+    def __call__(self, bytes_amount):
+        # To simplify we'll assume this is hooked up
+        # to a single filename.
+        with self._lock:
+            self._seen_so_far += bytes_amount
+            global percentage
+            percentage = (self._seen_so_far / self._size) * 100
+            print('percentage2 = ',percentage)
+
 class Objects_boto3():
     def __init__(self,accesskey,secretkey,endpoint):
         self.accesskey = accesskey
@@ -28,7 +47,7 @@ class Objects_boto3():
         #boto3.set_stream_logger()
         #botocore.session.Session().set_debug_logger()
         try:
-            #print(self.accesskey,self.secretkey,self.endpoint)
+            print(self.accesskey,self.secretkey,self.endpoint)
             session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
             s3resource = session.resource('s3',endpoint_url=self.endpoint)
         except ClientError as e:
@@ -66,8 +85,9 @@ class Objects_boto3():
     def upload_file(self,bucket_name,file_name):
         s3resource = self.boto3_session()
         local_file = self.SAVE_DIR+file_name
+        file_size = os.path.getsize(local_file)
         if os.path.exists(local_file):
-            result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name)
+            result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name,Callback=ProgressPercentage(local_file,file_size))
             os.remove(local_file)
             return result
         else:

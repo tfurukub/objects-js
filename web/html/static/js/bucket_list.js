@@ -114,18 +114,23 @@ let upload_files = function(){
 
 let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
   //console.log('setInterval called')
-  p_2 = 0
+  var p_2 = 0
+  var p_3 = 0
   timer = setInterval(function(){
     url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
     $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
       success: function(j){
-        pgb_update(p_1+p_2)
+        console.log(p_1,p_2,p_3)
+        pgb_update(p_1+p_2+p_3)
         if(j['num'] == 0){
           clearInterval(timer)
+          pgb_update(100)
           console.log('cleared')
         }else{
-          p_2 = parseInt((j['concat_size']/file_size*100/2).toFixed(0))
-          //console.log('p_2=',p_2)
+          p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
+          p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
+          console.log(p_1,p_2,p_3)
+          //console.log('p_3=',p_3)
         }
       }
     })

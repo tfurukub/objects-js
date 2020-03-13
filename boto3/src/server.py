@@ -5,17 +5,17 @@ import shutil
 from flask import Flask, jsonify, request, make_response
 import objects_highlevel
 
-#ACCESS_KEY = 'CSv6QuzxwEDUu50iFgEWeInum2uHpNfK'
-#SECRET_KEY = 'JIUMcFUybN160Lk0ihgxPsbKu_zwae_y'
-#ENDPOINT_URL = 'http://10.149.81.1'
 ACCESS_KEY = ''
 SECRET_KEY = ''
 ENDPOINT_URL = ''
 SAVE_DIR = '/src/tmp/'
-completed = 0
+SECRET_FILE = 'secret.json'
 
 #PORT = int(os.environ['PORT'])
 #DEBUG = os.environ['DEBUG'].lower() == 'true'
+
+
+
 OBJECT_BOTO3 = objects_highlevel.Objects_boto3(ACCESS_KEY,SECRET_KEY,ENDPOINT_URL)
 app = Flask('pdf creator')
 
@@ -26,7 +26,13 @@ app = Flask('pdf creator')
 @app.route('/api/v1/info/',methods=['PUT'])
 def configure_info():
     body = request.get_data().decode().strip()
-    d = json.loads(body)
+    
+    if os.path.isfile(os.path.join('/src/',SECRET_FILE)):
+        with open(os.path.join('/src/',SECRET_FILE),'r') as f:
+            d = json.load(f)
+    else:
+        d = json.loads(body)
+    print(d)
     OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
     return jsonify({},200)
 
@@ -94,9 +100,11 @@ def concat_file(bucket_name,file_name):
 
     if request.method == 'GET':
         concat_size = 0
+        p = objects_highlevel.percentage
+        print('p=',p)
         if os.path.isfile(filepath):
             concat_size = os.path.getsize(filepath)
-        return(jsonify({'num':len(files),'concat_size':concat_size}),200)
+        return(jsonify({'num':len(files),'concat_size':concat_size,'s3_progress':p}),200)
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>/',methods=['POST'])
 def delete_file(bucket_name,file_name):
