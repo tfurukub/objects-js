@@ -24,9 +24,10 @@ let draw_bucket_list2 = function(data){
 
 let draw_object_list = function(data){
   $('#object_list').empty()
-  k = 1
+  var k = 1
+  var txt = ''
   for (key in data){
-    items = [k,key,convertByteSize(data[key])]
+    var items = [k,key,convertByteSize(data[key])]
     txt = createbody(items)
     $('#object_list').append(txt)
     k++
@@ -59,38 +60,37 @@ let delete_bucket = function(){
 }
 
 let upload_files = function(){
-  file_name = this.files[0].name
+  var file_name = this.files[0].name
   var file = $('#upload_file').get(0).files[0]
   var formData = new FormData
-  chunk_size = 1024*1024
-  chunk_number = Math.ceil(file.size/chunk_size)
-  //console.log(chunk_number)
-  slice_index = 0
-  num_sent = 0
-  console.log('file size = ',file.size)
-  
-  i=0
-  file_part = file.slice(slice_index,slice_index+chunk_size)
+  var chunk_size = 1024*1024
+  var chunk_number = Math.ceil(file.size/chunk_size)
+  var slice_index = 0
+  var num_sent = 0
+  var i=0
+  var file_part = file.slice(slice_index,slice_index+chunk_size)
   slice_index += chunk_size
-  console.log(slice_index)
-
   var reader = new FileReader
-  
+
+  var selected_bucket
+  var url_option
+  var p
+
+  pgb_initialize()
   reader.onload = function(){
     formData.set(file_name,file_part)
     selected_bucket = $('#bucket-select option:selected').text()
     url_option = selected_bucket+'/'+file_name+'?index='+String(i)
+    
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){
         num_sent++
         p = (num_sent/chunk_number*100).toFixed(0)
-        $('#status').val(p)
-        $('#info').text(p + "% (" + num_sent*chunk_number*chunk_size + "/" + file.size + "byte)");
-        $('#fallback').text($('#info').text());
+        pgb_update(p)
         if(num_sent == chunk_number){
           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+selected_bucket+'/'+file_name+'?num='+chunk_number,
             success: function(){
-              alert(file_name+' Upload Completed')
+              //alert(file_name+' Upload Completed')
               $('#bucket-select').change()
             }
           })
@@ -105,6 +105,7 @@ let upload_files = function(){
     }
   }
   reader.readAsArrayBuffer(file_part)
+  
 }
 
 let delete_files = function(){
@@ -141,7 +142,6 @@ let update_key = function(){
    // 多重送信を防ぐため通信完了までボタンをdisableにする
    var button = $(this);
    button.attr("disabled", true);
-
    // 各フィールドから値を取得してJSONデータを作成
    var data = {
        endpoint_url: 'http://'+$('#endpoint_url').val(),
@@ -177,7 +177,7 @@ let parse_info_file = function(){
     var reader = new FileReader()
     reader.readAsText(this.files[0], 'UTF-8')
     reader.onload = function(){
-      txt = reader.result
+      var txt = reader.result
       var access_key_pattern = /Access\sKey:\s(\S+)\n/
       access_key = txt.match(access_key_pattern)
       $('#access_key').val(access_key[1])
@@ -187,41 +187,4 @@ let parse_info_file = function(){
       $('#secret_key').val(secret_key[1])
     }
   }
-}
-
-let all_select = function(){
-  $('input[name=r_chk]').prop('checked',this.checked)
-}
-
-let ind_select = function(){
-  if ($('#object_list :checked').length == $('#object_list :input').length) {
-    // 全てのチェックボックスにチェックが入っていたら、「全選択」 = checked  
-    $('#all_checks').prop('checked', true);
-  } else {
-    // 1つでもチェックが入っていたら、「全選択」 = checked
-    $('#all_checks').prop('checked', false);
-  }
-}
-
-let createbody = function(items){
-  txt = '<tr><td><input type=\"checkbox\" value=\"'+items[1]+'\" name=\"r_chk\"></td><td>'
-  items.forEach(function(item){
-        txt += item + '</td><td>'
-  })
-  txt = txt.slice(0,-4)+'</tr>'
-  return txt
-}
-
-let convertByteSize = function(size) {
-var sizes =[' B', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB'];
-var ext = sizes[0];
-if(typeof size==='number'){
-  for (var i=1;i< sizes.length;i+=1){
-    if(size>= 1024){
-      size = size / 1024;
-      ext = sizes[i];
-    }
-  }
-}
-return Math.round(size, 2)+ext;
 }

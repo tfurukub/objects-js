@@ -5,21 +5,25 @@
     <title>Object Viewer</title>
     <link  href="/static/favicon.ico" rel="icon" type="image/vnd.microsoft.icon">
     <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
+    <link  href="/static/css/jquery-ui.css" rel="stylesheet" >
     <script src="/static/js/jquery-2.2.4.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.min.js"></script>
+    <script src="/static/js/jquery-ui.min.js"></script>
     <script src="/static/js/bucket_list.js"></script>
+    <script src="/static/js/obj_util.js"></script>
+    <script src="/static/js/bootstrap-waitingfor.js"></script>
+    <script src="/static/js/bootstrap-waitingfor.min.js"></script>
   </head>
 
   <body>
     <div class="container">
-
 <div class="row">
   <div class="col-8">
-    <div id="progressbar">
-      <progress id="status" max="100" value="0"><span id="fallback"></span></progress>
-      <div id="info"></div>
-    </div>
+    <button id="open_window" type="button">open window</button>
+    <button id="create_prb" type="button">create progress bar</button>
+    <button id="prb" type="button">prb</button>
+    <div id="pr"></div><div id="lb"></div>
     <h2>Object List</h2>
     <button id="delete_files" value="DELETE_FILE">DELETE FILE</button>
     <hr>
@@ -85,6 +89,7 @@
 </div>
 
 <script>
+  var child
   $('#bucket-select').change(bucket_changed)
   $('#update').click(update_key)
   $('#info_file').change(parse_info_file)
@@ -94,6 +99,8 @@
   $('#delete_files').click(delete_files)
   $('#all_checks').click(all_select)
   $('#object_list').click(ind_select)
+  
+  
 </script>
 
     </div>
