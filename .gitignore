@@ -1,2 +1,5 @@
 
 boto3/src/secret.json
+*.pyc
+*.pyc
+boto3/src/__pycache__/objects_highlevel.cpython-37.pyc
