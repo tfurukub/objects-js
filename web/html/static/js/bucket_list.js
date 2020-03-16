@@ -1,3 +1,5 @@
+var num_sent
+
 let draw_bucket_list = function(){
      $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){
@@ -63,56 +65,49 @@ let upload_files = function(){
   var file_name = this.files[0].name
   var file_size = this.files[0].size
   var file = $('#upload_file').get(0).files[0]
-  var formData = new FormData
-  var chunk_size = 1024*1024*10
+  var chunk_size = 1024*1024
   var chunk_number = Math.ceil(file.size/chunk_size)
   var slice_index = 0
-  var num_sent = 0
-  var i=0
-  var file_part = file.slice(slice_index,slice_index+chunk_size)
-  slice_index += chunk_size
-  var reader = new FileReader
+  selected_bucket = $('#bucket-select option:selected').text()
+  num_sent = 0
+  pgb_initialize()
+  for(i=0;i<chunk_number;i++){
+    file_part = file.slice(slice_index,slice_index+chunk_size)
+    result = send_upload_request(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i)
+    slice_index += chunk_size
+  }
+}
 
-  var selected_bucket
+let send_upload_request = function(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i){
+  var reader = new FileReader
+  var formData = new FormData
   var url_option
   var p_1 = 0
   var p_2 = 0
-  var check_chunk_status_called = false
-  //pgb_initialize()
   reader.onload = function(){
     formData.set(file_name,file_part)
-    selected_bucket = $('#bucket-select option:selected').text()
     url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size
     console.log(url_option)
 
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){ 
         num_sent++
+        console.log(num_sent)
         p_1 = parseInt((num_sent/chunk_number*100/2).toFixed(0))
-        //pgb_update(p_1+p_2)
+        pgb_update(p_1+p_2)
+        
         if(num_sent == chunk_number){
           url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
-          
-          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
+           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
               //alert(file_name+' Upload Completed')
-              
               $('#bucket-select').change()
             }
           })
-
-          //check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
-
+          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
         }
       }
     })
-
-    if(slice_index < file.size){
-      file_part = file.slice(slice_index,slice_index+chunk_size)
-      slice_index += chunk_size
-      reader.readAsArrayBuffer(file_part)
-      i++
-    }
   }
   reader.readAsArrayBuffer(file_part)
 }
@@ -158,6 +153,7 @@ let send_download_request = function(f){
   }
   xhr.send()
 }
+
 let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
   //console.log('setInterval called')
   var p_2 = 0
@@ -165,29 +161,24 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
   var i = 0
   timer = setInterval(function(){
     url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
-    i++
-    console.log('d',i)
-    if(i<=2){
-      console.log('c',i)
-      $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
-        success: function(j){
-          i--
-          console.log('a',p_1,p_2,p_3)
-          pgb_update(p_1+p_2+p_3)
-          if(j['num'] == 0){
-            clearInterval(timer)
-            pgb_update(100)
-            console.log('cleared')
-          }else{
-            p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
-            p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
-            console.log('b',p_1,p_2,p_3)
-            //console.log('p_3=',p_3)
-          }
+    $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
+      success: function(j){
+        i--
+        console.log('a',p_1,p_2,p_3)
+        pgb_update(p_1+p_2+p_3)
+        if(j['num'] == 0){
+          clearInterval(timer)
+          pgb_update(100)
+          //console.log('cleared')
+        }else{
+          p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
+          p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
+          //console.log('b',p_1,p_2,p_3)
+          //console.log('p_3=',p_3)
         }
-      })
-    }
-  },1000)
+      }
+    })
+  },500)
 }
 
 let delete_files = function(){
