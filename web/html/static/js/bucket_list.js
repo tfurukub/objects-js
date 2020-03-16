@@ -64,7 +64,7 @@ let upload_files = function(){
   var file_size = this.files[0].size
   var file = $('#upload_file').get(0).files[0]
   var formData = new FormData
-  var chunk_size = 1024*1024
+  var chunk_size = 1024*1024*10
   var chunk_number = Math.ceil(file.size/chunk_size)
   var slice_index = 0
   var num_sent = 0
@@ -78,26 +78,31 @@ let upload_files = function(){
   var p_1 = 0
   var p_2 = 0
   var check_chunk_status_called = false
-  pgb_initialize()
+  //pgb_initialize()
   reader.onload = function(){
     formData.set(file_name,file_part)
     selected_bucket = $('#bucket-select option:selected').text()
     url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size
+    console.log(url_option)
 
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){ 
         num_sent++
         p_1 = parseInt((num_sent/chunk_number*100/2).toFixed(0))
-        pgb_update(p_1+p_2)
+        //pgb_update(p_1+p_2)
         if(num_sent == chunk_number){
           url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
-          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
+          
           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
               //alert(file_name+' Upload Completed')
+              
               $('#bucket-select').change()
             }
           })
+
+          //check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
+
         }
       }
     })
@@ -112,28 +117,76 @@ let upload_files = function(){
   reader.readAsArrayBuffer(file_part)
 }
 
+let download_files = function(){
+  $("input[name=r_chk]:checked").each(function(){
+    f = $(this).val()
+    send_download_request(f)
+  })
+}
+
+let send_download_request = function(f){
+  selected_bucket = $('#bucket-select option:selected').text()
+  var url = '/api/v1/bucket/object/download/'+selected_bucket+'/'+f
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.setRequestHeader('Pragma', 'no-cache');
+  xhr.setRequestHeader('Cache-Control', 'no-cache');
+  xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00')
+  xhr.responseType = 'blob';
+  
+  xhr.onreadystatechange = function (e) {
+    if (this.readyState == 4 && this.status == 200) {
+      var blob = this.response;
+
+      //IE, Edge とその他で処理の切り分け
+      if (window.navigator.msSaveBlob) {
+        window.navigator.msSaveBlob(blob, f);
+      } else {
+        var a = document.createElement("a");
+        // IE11 は URL API をサポートしてない
+        var url = window.URL;
+        a.href = url.createObjectURL(new Blob([blob],
+                                    { type: blob.type }));
+        document.body.appendChild(a);
+        a.style = "display: none";
+        a.download = f
+        a.click();
+        document.body.removeChild(a)
+      }
+    }
+    
+  }
+  xhr.send()
+}
 let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
   //console.log('setInterval called')
   var p_2 = 0
   var p_3 = 0
+  var i = 0
   timer = setInterval(function(){
     url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
-    $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
-      success: function(j){
-        console.log(p_1,p_2,p_3)
-        pgb_update(p_1+p_2+p_3)
-        if(j['num'] == 0){
-          clearInterval(timer)
-          pgb_update(100)
-          console.log('cleared')
-        }else{
-          p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
-          p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
-          console.log(p_1,p_2,p_3)
-          //console.log('p_3=',p_3)
+    i++
+    console.log('d',i)
+    if(i<=2){
+      console.log('c',i)
+      $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
+        success: function(j){
+          i--
+          console.log('a',p_1,p_2,p_3)
+          pgb_update(p_1+p_2+p_3)
+          if(j['num'] == 0){
+            clearInterval(timer)
+            pgb_update(100)
+            console.log('cleared')
+          }else{
+            p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
+            p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
+            console.log('b',p_1,p_2,p_3)
+            //console.log('p_3=',p_3)
+          }
         }
-      }
-    })
+      })
+    }
   },1000)
 }
 
@@ -144,7 +197,7 @@ let delete_files = function(){
   selected_bucket = $('#bucket-select option:selected').text()
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
-    $.ajax({type:'post', url:'/api/v1/bucket/object/delete/'+selected_bucket+'/'+f+'/',
+    $.ajax({type:'post', url:'/api/v1/bucket/object/delete/'+selected_bucket+'/'+f,
       success:function(j, status, xhr){
         $('#bucket-select').change()
       }, 

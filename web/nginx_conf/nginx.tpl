@@ -25,7 +25,10 @@ http {
       root   /usr/share/nginx/html;
       index  index.html index.htm;
     }
-
+    send_timeout 600;
+    proxy_connect_timeout 600;
+    proxy_read_timeout    600;
+    proxy_send_timeout    600;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Host $host;

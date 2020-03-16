@@ -1,4 +1,4 @@
-From python:3.7.5-slim
+From python:slim
 RUN pip install flask==1.1.1 tinydb==3.15.2 boto3==1.12.8
 ADD ./src /src
 WORKDIR /src

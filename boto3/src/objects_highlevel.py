@@ -37,29 +37,30 @@ class ProgressPercentage(object):
             print('percentage2 = ',percentage)
 
 class Objects_boto3():
-    def __init__(self,accesskey,secretkey,endpoint):
+    def __init__(self,accesskey,secretkey,endpoint,up,down):
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
-        self.SAVE_DIR = '/src/tmp/'
+        self.UPLOAD_SAVE_DIR = up
+        self.DOWNLOAD_SAVE_DIR = down
     
     def boto3_session(self):
         #boto3.set_stream_logger()
         #botocore.session.Session().set_debug_logger()
         try:
-            print(self.accesskey,self.secretkey,self.endpoint)
+            #print(self.accesskey,self.secretkey,self.endpoint)
             session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
             s3resource = session.resource('s3',endpoint_url=self.endpoint)
         except ClientError as e:
             print(e)
             return e
-        else:
+        else:            
             return s3resource
 
     def list_bucket(self):
         s3resource = self.boto3_session()
         bucket_list = []
-        for bucket in s3resource.buckets.all():
+        for bucket in s3resource.buckets.all():            
             bucket_list.append(bucket.name)
         return bucket_list
 
@@ -83,15 +84,28 @@ class Objects_boto3():
         return object_list
 
     def upload_file(self,bucket_name,file_name):
+        global percentage
         s3resource = self.boto3_session()
-        local_file = self.SAVE_DIR+file_name
+        local_file = self.UPLOAD_SAVE_DIR+file_name
         file_size = os.path.getsize(local_file)
         if os.path.exists(local_file):
+            print('started sending file to Objects')
             result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name,Callback=ProgressPercentage(local_file,file_size))
+            #result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name)
             os.remove(local_file)
+            percentage = 0.0
             return result
         else:
             return('No File Exist. Can not upload')
+
+    def download_file(self,bucket_name,file_name):
+        s3resource = self.boto3_session()
+        local_file = self.DOWNLOAD_SAVE_DIR+file_name
+        remote_file = file_name
+        file_size = s3resource.Object(bucket_name,remote_file).content_length
+        result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(remote_file,file_size))
+        percentage = 0.0
+        return result
 
     def delete_file(self,bucket_name,file_name):
         s3resource = self.boto3_session()
