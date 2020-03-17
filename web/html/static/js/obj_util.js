@@ -1,29 +1,52 @@
-let pgb_initialize = function(){
-    txt = '<p>AAAAAAAAAAAA</p><div id="pgb"></div><div id="lbl"></div></div>'
+file_order = {}
+let pgb_initialize = function(files){
+    tag_txt = {}
+    style_txt = {}
+    num = files.length
+    for(i=0;i<num;i++){
+        file_name = files[i].name
+        file_order[file_name] = i
+        tag_txt[file_name] = '<p>'+file_name+'</p><div id=\"pgb_'+String(i)+'\">'+'<div id=\"lbl_'+String(i)+'\"></div>'+'</div>'
+        style_txt[file_name] = '<style type=\"text/css\">#lbl_'+String(i)+'{position: absolute;left: 50%;}</style>'
+        
+        console.log(tag_txt[file_name])
+    }
+    
     progress_window()
     child.onload = function(){
-        $('#progress_bar',child.document).append(txt)
-        console.log(txt)
-        tag = '#pgb'
-        $(tag,child.document).progressbar({
-            value: 0,
-            max:100,
-            change: function(){
-            var v = $("#pgb",child.document).progressbar("value");
-            $("#lbl",child.document).text(v + "%");
-            },
-            complete: function(){
-            $("#lbl",child.document).text("完了しました");
-            }
-            })
-            
+        Object.keys(tag_txt).forEach(function(key) {
+            var val_pgb = this[key]; // this は obj
+            var val_body = style_txt[key]
+            console.log(key, val_pgb,val_body);
+            $('#progress_bar',child.document).append(val_pgb)
+            $('#body_id',child.document).append(val_body)
+            pgb_tag = '#pgb_'+file_order[key]
+            lbl_tag = '#lbl_'+file_order[key]
+
+            $(pgb_tag,child.document).progressbar({
+                value: 0,
+                max:100,
+                change: function(){
+                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                        var v = $(pgb_tag,child.document).progressbar("value");
+                        $(lbl_tag,child.document).text(v + "%");
+                        console.log(pgb_tag,lbl_tag,v)
+                        },
+                    complete: function(){
+                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                        $(lbl_tag,child.document).text("Completed");
+                        console.log(pgb_tag,lbl_tag,$(pgb_tag,child.document).progressbar("value"))
+                    }
+                })
+          }, tag_txt)         
     }
-    //return child
+    console.log(file_order)
 }
 
-let pgb_update = function(p){
-    $('#pgb',child.document).progressbar('value',parseInt(p,10))
-    //console.log(p)
+let pgb_update = function(p,file_name){
+    pgb_tag = '#pgb_'+file_order[file_name]
+    $(pgb_tag,child.document).progressbar('value',parseInt(p,10))
+    console.log('p=',parseInt(p,10))
 }
 let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
@@ -34,34 +57,38 @@ let all_select = function(){
 }
   
 let ind_select = function(){
-if ($('#object_list :checked').length == $('#object_list :input').length) {
-    // 全てのチェックボックスにチェックが入っていたら、「全選択」 = checked  
-    $('#all_checks').prop('checked', true);
-} else {
-    // 1つでもチェックが入っていたら、「全選択」 = checked
-    $('#all_checks').prop('checked', false);
-}
+    if ($('#object_list :checked').length == $('#object_list :input').length) {
+        // 全てのチェックボックスにチェックが入っていたら、「全選択」 = checked  
+        $('#all_checks').prop('checked', true);
+    } else {
+        // 1つでもチェックが入っていたら、「全選択」 = checked
+        $('#all_checks').prop('checked', false);
+    }
 }
 
 let createbody = function(items){
-txt = '<tr><td><input type=\"checkbox\" value=\"'+items[1]+'\" name=\"r_chk\"></td><td>'
-items.forEach(function(item){
-        txt += item + '</td><td>'
-})
-txt = txt.slice(0,-4)+'</tr>'
-return txt
+    txt = '<tr><td><input type=\"checkbox\" value=\"'+items[1]+'\" name=\"r_chk\"></td><td>'
+    items.forEach(function(item){
+            txt += item + '</td><td>'
+    })
+    txt = txt.slice(0,-4)+'</tr>'
+    return txt
 }
 
 let convertByteSize = function(size) {
-var sizes =[' B', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB'];
-var ext = sizes[0];
-if(typeof size==='number'){
-for (var i=1;i< sizes.length;i+=1){
-    if(size>= 1024){
-    size = size / 1024;
-    ext = sizes[i];
+    var sizes =[' B', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB'];
+    var ext = sizes[0];
+    if(typeof size==='number'){
+        for (var i=1;i< sizes.length;i+=1){
+            if(size>= 1024){
+            size = size / 1024;
+            ext = sizes[i];
+            }
+        }
     }
+    return Math.round(size, 2)+ext;
 }
-}
-return Math.round(size, 2)+ext;
+
+let test_progress = function(){
+    child = window.open('test.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
 }

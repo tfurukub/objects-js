@@ -62,6 +62,7 @@ let delete_bucket = function(){
 }
 
 let upload_files = function(){
+  pgb_initialize(this.files)
   for(k=0;k<this.files.length;k++){
     var file_name = this.files[k].name
     var file_size = this.files[k].size
@@ -70,8 +71,7 @@ let upload_files = function(){
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     selected_bucket = $('#bucket-select option:selected').text()
-    num_sent[file_name] = 0
-    //pgb_initialize()
+    num_sent[file_name] = 0    
     for(i=0;i<chunk_number;i++){
       file_part = file.slice(slice_index,slice_index+chunk_size)
       result = send_upload_request(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i)
@@ -96,17 +96,19 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
         num_sent[file_name] += 1
         console.log('a',file_name,num_sent[file_name])
         p_1 = parseInt((num_sent[file_name]/chunk_number*100/2).toFixed(0))
-        //pgb_update(p_1+p_2)
+        pgb_update(p_1+p_2,file_name)
         
         if(num_sent[file_name] == chunk_number){
           url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
            $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
               //alert(file_name+' Upload Completed')
+              //delete num_sent
+              //delete file_order
               $('#bucket-select').change()
             }
           })
-          //check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
+          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
         }
       }
     })
@@ -157,22 +159,23 @@ let send_download_request = function(f){
 }
 
 let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
-  //console.log('setInterval called')
+  console.log('check_chunk_status called')
   var p_2 = 0
   var p_3 = 0
-    timer = setInterval(function(){
+  var timer = {}
+  timer[file_name] = setInterval(function(){
     url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
     $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
       success: function(j){
-          pgb_update(p_1+p_2+p_3)
-        if(j['num'] == 0){
-          clearInterval(timer)
-          pgb_update(100)
-          //console.log('cleared')
+          pgb_update(p_1+p_2+p_3,file_name)
+        if(j['completed'] == 'yes'){
+          clearInterval(timer[file_name])
+          pgb_update(100,file_name)
+          console.log('cleared',file_name)
         }else{
           p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
           p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
-          //console.log('b',p_1,p_2,p_3)
+          console.log(file_name,p_1,p_2,p_3)
           //console.log('p_3=',p_3)
         }
       }

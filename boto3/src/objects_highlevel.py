@@ -17,15 +17,15 @@ import datetime
 from boto3.session import Session
 import sys
 
-percentage = 0.0
+percentage = {}
 
 class ProgressPercentage(object):
     
-    def __init__(self, filename,file_size):
-        self._filename = filename
+    def __init__(self, file_size,file_name):
         self._size = float(file_size)
         self._seen_so_far = 0
         self._lock = threading.Lock()
+        self._file_name = file_name
 
     def __call__(self, bytes_amount):
         # To simplify we'll assume this is hooked up
@@ -33,16 +33,14 @@ class ProgressPercentage(object):
         with self._lock:
             self._seen_so_far += bytes_amount
             global percentage
-            percentage = (self._seen_so_far / self._size) * 100
-            print('percentage2 = ',percentage)
+            percentage[self._file_name] = (self._seen_so_far / self._size) * 100
+            print('percentage2 = ',percentage[self._file_name],self._file_name)
 
 class Objects_boto3():
     def __init__(self,accesskey,secretkey,endpoint,up,down):
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
-        self.UPLOAD_SAVE_DIR = up
-        self.DOWNLOAD_SAVE_DIR = down
     
     def boto3_session(self):
         #boto3.set_stream_logger()
@@ -83,18 +81,19 @@ class Objects_boto3():
         #print(object_list)
         return object_list
 
-    def upload_file(self,bucket_name,file_name):
+    def upload_file(self,bucket_name,file_name,filepath):
         global percentage
+        percentage[file_name] = 0.0
         s3resource = self.boto3_session()
-        local_file = self.UPLOAD_SAVE_DIR+file_name
+        local_file = filepath
         file_size = os.path.getsize(local_file)
         if os.path.exists(local_file):
             print('started sending file to Objects')
-            result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name,Callback=ProgressPercentage(local_file,file_size))
+            s3resource.Bucket(bucket_name).upload_file(local_file,file_name,Callback=ProgressPercentage(file_size,file_name))
             #result = s3resource.Bucket(bucket_name).upload_file(local_file,file_name)
             os.remove(local_file)
-            percentage = 0.0
-            return result
+            percentage[file_name] = 0.0
+            return True
         else:
             return('No File Exist. Can not upload')
 

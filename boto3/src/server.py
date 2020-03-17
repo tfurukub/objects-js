@@ -97,23 +97,26 @@ def concat_file(bucket_name,file_name):
                 savefile.write(data)
                 savefile.flush()
                 print(os.path.join(UPLOAD_SAVE_DIR,files_ordered[i]))
-        result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
+        result = OBJECT_BOTO3.upload_file(bucket_name,file_name,filepath)
 
         for item in files_ordered:
             os.remove(os.path.join(UPLOAD_SAVE_DIR,item))
         return(jsonify(result))
 
     if request.method == 'GET':
-        print('file num=',len(files))
         concat_size = 0
-        p = objects_highlevel.percentage
-        
+        if file_name in objects_highlevel.percentage:
+            p = objects_highlevel.percentage[file_name]
+        else:
+            p = 0
         if os.path.isfile(filepath):
             concat_size = os.path.getsize(filepath)
-        elif p != 0:
-            return(jsonify({'num':len(files),'concat_size':request.args.get('size'),'s3_progress':p}),200)
-        print(concat_size,p)
-        return(jsonify({'num':len(files),'concat_size':concat_size,'s3_progress':p}),200)
+
+        if file_name not in files:
+            print(concat_size,p,file_name)
+            return(jsonify({'completed':'yes','concat_size':concat_size,'s3_progress':p}),200)
+        print(concat_size,p,file_name)
+        return(jsonify({'completed':'no','concat_size':concat_size,'s3_progress':p}),200)
 
 @app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['GET'])
 def download_file(bucket_name,file_name):
