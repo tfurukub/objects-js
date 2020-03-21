@@ -97,13 +97,13 @@ class Objects_boto3():
         else:
             return('No File Exist. Can not upload')
 
-    def download_file(self,bucket_name,file_name):
+    def download_file(self,bucket_name,file_name,filepath):
         s3resource = self.boto3_session()
-        local_file = self.DOWNLOAD_SAVE_DIR+file_name
+        percentage[file_name] = 0.0
+        local_file = filepath
         remote_file = file_name
         file_size = s3resource.Object(bucket_name,remote_file).content_length
-        result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(remote_file,file_size))
-        percentage = 0.0
+        result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file))
         return result
 
     def delete_file(self,bucket_name,file_name):

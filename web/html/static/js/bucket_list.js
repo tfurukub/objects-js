@@ -1,5 +1,5 @@
 var num_sent = {}
-
+var ajax_flag = {}
 let draw_bucket_list = function(){
      $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){
@@ -117,14 +117,28 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
 }
 
 let download_files = function(){
+  files = []
+  i = 0
+  selected_bucket = $('#bucket-select option:selected').text()
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
-    send_download_request(f)
+    files[i] = {'name':f}
+    i++
+    
+  })
+  pgb_initialize(files)
+
+  $("input[name=r_chk]:checked").each(function(){
+    f = $(this).val()
+    url_option = selected_bucket+'/'+ f
+    $.ajax({type:'put',url:'/api/v1/bucket/object/download/'+url_option})
+    check_download_status(selected_bucket,f)
   })
 }
 
 let send_download_request = function(f){
   selected_bucket = $('#bucket-select option:selected').text()
+  //check_download_status(selected_bucket,f)
   var url = '/api/v1/bucket/object/download/'+selected_bucket+'/'+f
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
@@ -132,6 +146,11 @@ let send_download_request = function(f){
   xhr.setRequestHeader('Cache-Control', 'no-cache');
   xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00')
   xhr.responseType = 'blob';
+  
+  xhr.onprogress = function (evt) {
+    var load = (100*evt.loaded/evt.total|0)/2+50
+    pgb_update(load,f)
+  };
   
   xhr.onreadystatechange = function (e) {
     if (this.readyState == 4 && this.status == 200) {
@@ -171,7 +190,7 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
         if(j['completed'] == 'yes'){
           clearInterval(timer[file_name])
           pgb_update(100,file_name)
-          console.log('cleared',file_name)
+          console.log('upload cleared',file_name)
         }else{
           p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
           p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
@@ -180,6 +199,36 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
         }
       }
     })
+  },500)
+}
+
+let check_download_status= function(selected_bucket,file_name){
+  console.log('check_download_status called ',file_name)
+  var timer = {}
+  p = 0
+  ajax_flag[file_name] = 'not sending'
+  timer[file_name] = setInterval(function(){  
+    url_option = selected_bucket+'/'+file_name
+    console.log(ajax_flag[file_name],file_name)
+    if(ajax_flag[file_name] == 'not sending'){
+      ajax_flag [file_name] = 'sent'
+      $.ajax({type:'get',url:'/api/v1/bucket/object/download/status/'+url_option,
+        success: function(j){
+          ajax_flag[file_name] = 'not sending'
+          if(parseInt(j['progress']).toFixed(0) == 100){
+            clearInterval(timer[file_name])
+            pgb_update(50,file_name)
+            console.log('download cleared',file_name)
+            send_download_request(file_name)
+          }else{            
+            p = parseInt((j['progress']).toFixed(0))/2
+            console.log(file_name,p)
+            pgb_update(p,file_name)
+            //console.log('p_3=',p_3)
+          }
+        }
+      })
+    }
   },500)
 }
 
@@ -262,4 +311,8 @@ let parse_info_file = function(){
       $('#secret_key').val(secret_key[1])
     }
   }
+}
+
+let refresh_object_list = function(){
+  $('#bucket-select').change()
 }

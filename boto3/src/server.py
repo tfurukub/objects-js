@@ -118,10 +118,25 @@ def concat_file(bucket_name,file_name):
         print(concat_size,p,file_name)
         return(jsonify({'completed':'no','concat_size':concat_size,'s3_progress':p}),200)
 
-@app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['GET'])
+@app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET'])
 def download_file(bucket_name,file_name):
-    result = OBJECT_BOTO3.download_file(bucket_name,file_name)
-    return send_from_directory(DOWNLOAD_SAVE_DIR, file_name,as_attachment = True, attachment_filename = file_name)
+    filepath = os.path.join(DOWNLOAD_SAVE_DIR,file_name)
+    if request.method == 'PUT':
+        result = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath)
+        return (jsonify({}),200)
+    if request.method == 'GET':
+        f = send_from_directory(DOWNLOAD_SAVE_DIR, file_name,as_attachment = True, attachment_filename = file_name)
+        os.remove(filepath)
+        return f
+
+@app.route('/api/v1/bucket/object/download/status/<bucket_name>/<file_name>',methods=['GET'])
+def download_status(bucket_name,file_name):
+    if file_name in objects_highlevel.percentage:
+        p = objects_highlevel.percentage[file_name]
+    else:
+        p = 0
+    print('p= ',p)
+    return (jsonify({'progress':p}))
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>',methods=['POST'])
 def delete_file(bucket_name,file_name):
