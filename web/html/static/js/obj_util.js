@@ -37,8 +37,10 @@ let pgb_initialize = function(files){
                                 $(lbl_tag,child.document).text(v + "%");
                                 //console.log(pgb_tag,lbl_tag,v)
                             }
+                        }else{
+                            $(lbl_tag,child.document).text(v + "%")
                         }
-                        },
+                    },
                     complete: function(){
                         lbl_tag = pgb_tag.replace(/pgb/,'lbl')
                         $(lbl_tag,child.document).text("Completed");
