@@ -2,6 +2,8 @@ import json
 import os
 import re
 import shutil
+import time
+import uuid
 from flask import Flask, jsonify, request, make_response,send_from_directory
 import objects_highlevel
 
@@ -59,6 +61,10 @@ def buckets(bucket_name):
     if request.method == 'DELETE':
         result = OBJECT_BOTO3.delete_bucket(bucket_name)
         return jsonify(result)
+
+@app.route('/api/v1/init/',methods=['GET'])
+def uuid_init():
+    return jsonify({'uuid':uuid.uuid4()})
 
 @app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>',methods=['POST'])
 def upload_file(bucket_name,file_name):
@@ -118,24 +124,43 @@ def concat_file(bucket_name,file_name):
         print(concat_size,p,file_name)
         return(jsonify({'completed':'no','concat_size':concat_size,'s3_progress':p}),200)
 
-@app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET'])
+@app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET','DELETE'])
 def download_file(bucket_name,file_name):
     filepath = os.path.join(DOWNLOAD_SAVE_DIR,file_name)
     if request.method == 'PUT':
         result = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath)
         return (jsonify({}),200)
     if request.method == 'GET':
-        f = send_from_directory(DOWNLOAD_SAVE_DIR, file_name,as_attachment = True, attachment_filename = file_name)
+        if os.path.isfile(filepath) == False:
+            print('wait for 1 second')
+            time.sleep(1)
+            
+        if os.path.isfile(filepath):
+            f = send_from_directory(DOWNLOAD_SAVE_DIR, file_name,as_attachment = True, attachment_filename = file_name)
+            return f
+        else:
+            return (jsonify({}),404)
+    if request.method == 'DELETE':
         os.remove(filepath)
-        return f
+        return(jsonify({}),200)
 
 @app.route('/api/v1/bucket/object/download/status/<bucket_name>/<file_name>',methods=['GET'])
 def download_status(bucket_name,file_name):
+    filepath = os.path.join(DOWNLOAD_SAVE_DIR,file_name)
+    pattern = re.compile(r'{0}(?P<tag>\S*)'.format(file_name))
+    files = os.listdir(DOWNLOAD_SAVE_DIR)
+    for item in files:
+        result = pattern.match(item)
+        if result:
+            if result.group('tag') != '':
+                print(result.group('tag'))
+    if os.path.isfile(filepath):
+        print(os.path.getsize(filepath))
     if file_name in objects_highlevel.percentage:
         p = objects_highlevel.percentage[file_name]
     else:
         p = 0
-    print('p= ',p)
+    print('p= ',p,file_name)
     return (jsonify({'progress':p}))
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>',methods=['POST'])

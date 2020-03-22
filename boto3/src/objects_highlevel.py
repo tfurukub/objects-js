@@ -106,6 +106,9 @@ class Objects_boto3():
         result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file))
         return result
 
+    def check_download_size(self,bucket_name,file_name):
+        return s3resource.Object(bucket_name,file_name).content_length
+
     def delete_file(self,bucket_name,file_name):
         s3resource = self.boto3_session()
         result = s3resource.Object(bucket_name,file_name).delete()

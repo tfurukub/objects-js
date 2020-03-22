@@ -128,8 +128,12 @@ let download_files = function(){
   })
   pgb_initialize(files)
 
+  uuid_list = {}
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
+    uuid = generateUuid()
+    uuid_list[f] = uuid
+    //url_option = selected_bucket+'/'+ f + '?uuid='+uuid
     url_option = selected_bucket+'/'+ f
     $.ajax({type:'put',url:'/api/v1/bucket/object/download/'+url_option})
     check_download_status(selected_bucket,f)
@@ -148,8 +152,16 @@ let send_download_request = function(f){
   xhr.responseType = 'blob';
   
   xhr.onprogress = function (evt) {
-    var load = (100*evt.loaded/evt.total|0)/2+50
-    pgb_update(load,f)
+    if(this.status == 200){
+      var load = (100*evt.loaded/evt.total|0)/2+50
+      pgb_update(load,f)
+      if(parseInt(load).toFixed(0) == 100){
+        url_option = selected_bucket+'/'+ f
+        $.ajax({type:'delete',url:'/api/v1/bucket/object/download/'+url_option})
+      }
+    }else{
+      alert('Download Failed. File Name = '+f)
+    }
   };
   
   xhr.onreadystatechange = function (e) {

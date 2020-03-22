@@ -32,8 +32,9 @@ let pgb_initialize = function(files){
                         var txt = $(lbl_tag,child.document).text()
                         var pattern = /^(\d+)\%/
                         current_v = txt.match(pattern)
+                        
                         if(current_v != null){
-                            if(v >= current_v){
+                            if(v >= current_v[1]){
                                 $(lbl_tag,child.document).text(v + "%");
                                 //console.log(pgb_tag,lbl_tag,v)
                             }
@@ -98,6 +99,27 @@ let convertByteSize = function(size) {
     return Math.round(size, 2)+ext;
 }
 
+let generateUuid = function(){
+    // https://github.com/GoogleChrome/chrome-platform-analytics/blob/master/src/internal/identifier.js
+    // const FORMAT: string = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+    let chars = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("");
+    for (let i = 0, len = chars.length; i < len; i++) {
+        switch (chars[i]) {
+            case "x":
+                chars[i] = Math.floor(Math.random() * 16).toString(16);
+                break;
+            case "y":
+                chars[i] = (Math.floor(Math.random() * 4) + 8).toString(16);
+                break;
+        }
+    }
+    return chars.join("");
+}
+
 let test_progress = function(){
-    child = window.open('test.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
+    $.ajax({type:'get',url:'/api/v1/init/',
+    success:function(j){
+        console.log(j['uuid'])
+    }
+    })
 }
