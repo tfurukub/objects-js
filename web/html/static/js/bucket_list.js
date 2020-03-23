@@ -62,37 +62,65 @@ let delete_bucket = function(){
 }
 
 let upload_files = function(){
-  pgb_initialize(this.files)
-  for(k=0;k<this.files.length;k++){
-    var file_name = this.files[k].name
-    var file_size = this.files[k].size
-    var file = this.files[k]
+  files = this.files
+  pgb_initialize(files)
+  var d = {}
+  for(k=0;k<files.length;k++){
+    var file_name = files[k].name
+    var file_size = files[k].size
+    var file = files[k]
     var chunk_size = 1024*1024
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
-    selected_bucket = $('#bucket-select option:selected').text()
-    num_sent[file_name] = 0    
-    for(i=0;i<chunk_number;i++){
-      file_part = file.slice(slice_index,slice_index+chunk_size)
-      result = send_upload_request(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i)
-      slice_index += chunk_size
-    }
+    var uuid = generateUuid()
+    var selected_bucket = $('#bucket-select option:selected').text()
+    d1 = {}
+    d1['file_name'] = file_name
+    d1['file_size'] = file_size
+    d1['chunk_size'] = chunk_size
+    d1['chunk_number'] = chunk_number
+    d1['slice_index'] = slice_index
+    d1['num'] = k
+    d[uuid] = d1
+
+    num_sent[file_name] = 0
+    url_option = file_name + '/' + uuid + '/upload/'
+    $.ajax({type:'put',url:'/api/v1/init/'+url_option,
+      success:function(j){
+        d2 = d[j['uuid']]
+        num = d2['num']
+        
+        for(i=0;i<d2['chunk_number'];i++){
+          console.log(d2['num'],d2['slice_index'],d2['file_name'],d2['file_size'])
+          file_part = files[num].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
+          result = send_upload_request(d2['file_name'],d2['file_size'],file_part,d2['chunk_size'],d2['chunk_number'],d2['slice_index'],selected_bucket,i,j['uuid'])
+          d2['slice_index'] += d2['chunk_size']
+          
+        }
+      },
+      error:function(j){
+        console.log(j)
+        alert('Failed to Initialize')
+      }
+    })
   }
 }
 
-let send_upload_request = function(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i){
+let send_upload_request = function(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i,uuid){
   var reader = new FileReader
   var formData = new FormData
   var url_option
   var p_1 = 0
   var p_2 = 0
+ 
   reader.onload = function(){
     formData.set(file_name,file_part)
-    url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size
+    url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size + '&uuid='+uuid
     console.log(url_option)
 
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
       success: function(){ 
+        /*
         num_sent[file_name] += 1
         console.log('a',file_name,num_sent[file_name])
         p_1 = parseInt((num_sent[file_name]/chunk_number*100/2).toFixed(0))
@@ -100,7 +128,7 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
         
         if(num_sent[file_name] == chunk_number){
           url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
-           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
+          $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
               //alert(file_name+' Upload Completed')
               //delete num_sent
@@ -110,6 +138,7 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
           })
           check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
         }
+        */
       }
     })
   }
@@ -120,7 +149,20 @@ let download_files = function(){
   files = []
   i = 0
   selected_bucket = $('#bucket-select option:selected').text()
-  $("input[name=r_chk]:checked").each(function(){
+  checked = $("input[name=r_chk]:checked")
+  if(checked.length == 0){
+    alert('Please select files')
+  }else{
+    download_files_continue()
+  }
+}
+
+let download_files_continue = function(){
+  files = []
+  i = 0
+  selected_bucket = $('#bucket-select option:selected').text()
+  checked = $("input[name=r_chk]:checked")
+  checked.each(function(){
     f = $(this).val()
     files[i] = {'name':f}
     i++
@@ -129,11 +171,11 @@ let download_files = function(){
   pgb_initialize(files)
 
   uuid_list = {}
-  $("input[name=r_chk]:checked").each(function(){
+  checked.each(function(){
     f = $(this).val()
     uuid = generateUuid()
     uuid_list[f] = uuid
-    url_option = f + '/' + uuid + '/'
+    url_option = f + '/' + uuid + '/download/'
     $.ajax({type:'put',url:'/api/v1/init/'+url_option,
       success:function(j){
         url_option = selected_bucket+'/'+ j['file_name'] + '?uuid='+j['uuid']

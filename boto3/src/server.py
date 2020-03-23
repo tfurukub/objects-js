@@ -19,7 +19,7 @@ SECRET_FILE = 'secret.json'
 
 
 
-OBJECT_BOTO3 = objects_highlevel.Objects_boto3(ACCESS_KEY,SECRET_KEY,ENDPOINT_URL,UPLOAD_SAVE_DIR,DOWNLOAD_SAVE_DIR)
+OBJECT_BOTO3 = objects_highlevel.Objects_boto3(ACCESS_KEY,SECRET_KEY,ENDPOINT_URL)
 app = Flask('pdf creator')
 
 #
@@ -62,9 +62,25 @@ def buckets(bucket_name):
         result = OBJECT_BOTO3.delete_bucket(bucket_name)
         return jsonify(result)
 
-@app.route('/api/v1/init/<file_name>/<uuid>/',methods=['PUT'])
-def init_percentage(uuid,file_name):
+@app.route('/api/v1/init/<file_name>/<uuid>/<op>/',methods=['PUT'])
+def init_percentage(uuid,file_name,op):
     OBJECT_BOTO3.init_percentage(uuid,file_name)
+
+    if uuid in OBJECT_BOTO3.per:
+        if op == 'download':
+            save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
+        elif op == 'upload':
+            save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
+        else:
+            return (jsonify({'error':'failed to initialize'}),500)
+
+        if not os.path.isdir(save_dir_path):
+            os.mkdir(save_dir_path)
+        return (jsonify({'uuid':uuid,'file_name':file_name}),200)
+    else:
+        return (jsonify({'error':'failed to initialize'}),500)
+
+    '''
     if uuid in objects_highlevel.percentage:
         save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
         if not os.path.isdir(save_dir_path):
@@ -72,19 +88,19 @@ def init_percentage(uuid,file_name):
         return (jsonify({'uuid':uuid,'file_name':file_name}),200)
     else:
         return (jsonify({'error':'failed to initialize'}),500)
+    '''
 
 @app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>',methods=['POST'])
 def upload_file(bucket_name,file_name):
-    if os.path.isdir(UPLOAD_SAVE_DIR) == False:
-        os.mkdir(UPLOAD_SAVE_DIR)
+    uuid = request.args.get('uuid')
+    save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
+    if os.path.isdir(save_dir_path) == False:
+        return (jsonify({}),500)
     file = request.files[file_name]
     file_name = request.args.get('index')+'_'+file_name
-    file.save(os.path.join(UPLOAD_SAVE_DIR,file_name))
-    print('saved !!!')
-    
-    #result = OBJECT_BOTO3.upload_file(bucket_name,file_name)
-    result = ''
-    return(jsonify(result))
+    file.save(os.path.join(save_dir_path,file_name))
+    print(file_name,'saved !!!')
+    return(jsonify({}),200)
 
 @app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['GET','POST'])
 def concat_file(bucket_name,file_name):
@@ -162,7 +178,8 @@ def download_status(bucket_name,file_name):
     save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
     if not os.path.isdir(save_dir_path):
         os.mkdir(save_dir_path)
-    p = objects_highlevel.percentage[uuid]['p']
+    #p = objects_highlevel.percentage[uuid]['p']
+    p = OBJECT_BOTO3.per[uuid]['p']
     print('p = ',p,file_name)
     return (jsonify({'progress':p}))
 '''    
@@ -182,7 +199,7 @@ def download_status(bucket_name,file_name):
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>',methods=['POST'])
 def delete_file(bucket_name,file_name):
     uuid = request.args.get('uuid')
-    objects_highlevel.delete_percentage(uuid)
+    OBJECT_BOTO3.delete_percentage(uuid)
     result = OBJECT_BOTO3.delete_file(bucket_name,file_name)
     return jsonify(result)
 
