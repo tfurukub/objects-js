@@ -1,5 +1,4 @@
 var num_sent = {}
-var ajax_flag = {}
 let draw_bucket_list = function(){
      $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){
@@ -69,7 +68,7 @@ let upload_files = function(){
     var file_name = files[k].name
     var file_size = files[k].size
     var file = files[k]
-    var chunk_size = 1024*1024
+    var chunk_size = 1024*1024*100
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     var uuid = generateUuid()
@@ -82,7 +81,7 @@ let upload_files = function(){
     d1['slice_index'] = slice_index
     d1['num'] = k
     d[uuid] = d1
-
+    
     num_sent[file_name] = 0
     url_option = file_name + '/' + uuid + '/upload/'
     $.ajax({type:'put',url:'/api/v1/init/'+url_option,
@@ -91,7 +90,6 @@ let upload_files = function(){
         num = d2['num']
         
         for(i=0;i<d2['chunk_number'];i++){
-          console.log(d2['num'],d2['slice_index'],d2['file_name'],d2['file_size'])
           file_part = files[num].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
           result = send_upload_request(d2['file_name'],d2['file_size'],file_part,d2['chunk_size'],d2['chunk_number'],d2['slice_index'],selected_bucket,i,j['uuid'])
           d2['slice_index'] += d2['chunk_size']
@@ -116,29 +114,25 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
   reader.onload = function(){
     formData.set(file_name,file_part)
     url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size + '&uuid='+uuid
-    console.log(url_option)
 
     $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
-      success: function(){ 
-        /*
+      success: function(j){ 
+        
         num_sent[file_name] += 1
-        console.log('a',file_name,num_sent[file_name])
         p_1 = parseInt((num_sent[file_name]/chunk_number*100/2).toFixed(0))
-        pgb_update(p_1+p_2,file_name)
+        pgb_update(p_1,file_name)
         
         if(num_sent[file_name] == chunk_number){
-          url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
+          
+          url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&uuid='+j['uuid']
           $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
             success: function(){
-              //alert(file_name+' Upload Completed')
-              //delete num_sent
-              //delete file_order
               $('#bucket-select').change()
             }
           })
-          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1)
+          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1,j['uuid'])
         }
-        */
+        
       }
     })
   }
@@ -240,59 +234,44 @@ let send_download_request = function(f,uuid){
   xhr.send()
 }
 
-let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1){
-  console.log('check_chunk_status called')
-  var p_2 = 0
-  var p_3 = 0
-  var timer = {}
-  timer[file_name] = setInterval(function(){
-    url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&size='+file_size
+let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_size,p_1,uuid){
+  url_option = selected_bucket+'/'+file_name+'?uuid='+uuid
     $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
       success: function(j){
-          pgb_update(p_1+p_2+p_3,file_name)
-        if(j['completed'] == 'yes'){
-          clearInterval(timer[file_name])
+        
+        p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
+        p_3 = parseInt((j['s3_progress']/4).toFixed(0))
+        
+        pgb_update(p_1+p_2+p_3,file_name)
+        if(j['s3_progress'] == String(100)){
+        
           pgb_update(100,file_name)
-          console.log('upload cleared',file_name)
+          url_option = selected_bucket+'/'+ file_name + '?uuid='+j['uuid']
+          $.ajax({type:'delete',url:'/api/v1/bucket/object/upload/'+url_option})
         }else{
-          p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
-          p_3 = parseInt((j['s3_progress']/4).toFixed(0)) 
-          console.log(file_name,p_1,p_2,p_3)
-          //console.log('p_3=',p_3)
+          
+          check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1,uuid)
         }
       }
     })
-  },500)
 }
 
 let check_download_status= function(selected_bucket,file_name,uuid){
-  console.log('check_download_status called ',file_name)
   var timer = {}
   p = 0
-  ajax_flag[file_name] = 'not sending'
-  timer[file_name] = setInterval(function(){  
-    url_option = selected_bucket+'/'+file_name + '?uuid='+uuid
-    console.log(ajax_flag[file_name],file_name)
-    if(ajax_flag[file_name] == 'not sending'){
-      ajax_flag [file_name] = 'sent'
-      $.ajax({type:'get',url:'/api/v1/bucket/object/download/status/'+url_option,
-        success: function(j){
-          ajax_flag[file_name] = 'not sending'
-          if(parseInt(j['progress']).toFixed(0) == 100){
-            clearInterval(timer[file_name])
-            pgb_update(50,file_name)
-            console.log('download cleared',file_name)
-            send_download_request(file_name,uuid)
-          }else{            
-            p = parseInt((j['progress']).toFixed(0))/2
-            console.log(file_name,p)
-            pgb_update(p,file_name)
-            //console.log('p_3=',p_3)
-          }
-        }
-      })
+  url_option = selected_bucket+'/'+file_name + '?uuid='+uuid
+  $.ajax({type:'get',url:'/api/v1/bucket/object/download/status/'+url_option,
+    success: function(j){
+      if(j['progress'] == String(100)){
+        pgb_update(50,file_name)
+        send_download_request(file_name,uuid)
+      }else{
+        p = parseInt((j['progress']).toFixed(0))/2
+        pgb_update(p,file_name)
+        check_download_status(selected_bucket,file_name,uuid)
+      }
     }
-  },500)
+  })
 }
 
 let delete_files = function(){

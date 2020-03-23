@@ -8,8 +8,6 @@ let pgb_initialize = function(files){
         file_order[file_name] = i
         tag_txt[file_name] = '<p>'+file_name+'</p><div id=\"pgb_'+String(i)+'\">'+'<div id=\"lbl_'+String(i)+'\"></div>'+'</div>'
         style_txt[file_name] = '<style type=\"text/css\">#lbl_'+String(i)+'{position: absolute;left: 50%;}</style>'
-        
-        //console.log(tag_txt[file_name])
     }
     
     progress_window()
@@ -17,7 +15,6 @@ let pgb_initialize = function(files){
         Object.keys(tag_txt).forEach(function(key) {
             var val_pgb = this[key]; // this は obj
             var val_body = style_txt[key]
-            //console.log(key, val_pgb,val_body);
             $('#progress_bar',child.document).append(val_pgb)
             $('#body_id',child.document).append(val_body)
             pgb_tag = '#pgb_'+file_order[key]
@@ -36,7 +33,6 @@ let pgb_initialize = function(files){
                         if(current_v != null){
                             if(v >= current_v[1]){
                                 $(lbl_tag,child.document).text(v + "%");
-                                //console.log(pgb_tag,lbl_tag,v)
                             }
                         }else{
                             $(lbl_tag,child.document).text(v + "%")
@@ -50,13 +46,11 @@ let pgb_initialize = function(files){
                 })
           }, tag_txt)         
     }
-    console.log(file_order)
 }
 
 let pgb_update = function(p,file_name){
     pgb_tag = '#pgb_'+file_order[file_name]
     $(pgb_tag,child.document).progressbar('value',parseInt(p,10))
-    console.log('in pbg_update p=',parseInt(p,10),file_name)
 }
 let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
