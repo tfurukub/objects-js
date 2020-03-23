@@ -133,17 +133,26 @@ let download_files = function(){
     f = $(this).val()
     uuid = generateUuid()
     uuid_list[f] = uuid
-    //url_option = selected_bucket+'/'+ f + '?uuid='+uuid
-    url_option = selected_bucket+'/'+ f
-    $.ajax({type:'put',url:'/api/v1/bucket/object/download/'+url_option})
-    check_download_status(selected_bucket,f)
+    url_option = f + '/' + uuid + '/'
+    $.ajax({type:'put',url:'/api/v1/init/'+url_option,
+      success:function(j){
+        url_option = selected_bucket+'/'+ j['file_name'] + '?uuid='+j['uuid']
+        $.ajax({type:'put',url:'/api/v1/bucket/object/download/'+url_option})
+        check_download_status(selected_bucket,j['file_name'],j['uuid'])
+        
+      },
+      error:function(j){
+        console.log(j)
+        alert('Failed to Initialize')
+      }
+    })
   })
 }
 
-let send_download_request = function(f){
+let send_download_request = function(f,uuid){
   selected_bucket = $('#bucket-select option:selected').text()
   //check_download_status(selected_bucket,f)
-  var url = '/api/v1/bucket/object/download/'+selected_bucket+'/'+f
+  var url = '/api/v1/bucket/object/download/'+selected_bucket+'/'+f + '?uuid='+uuid
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
   xhr.setRequestHeader('Pragma', 'no-cache');
@@ -156,7 +165,7 @@ let send_download_request = function(f){
       var load = (100*evt.loaded/evt.total|0)/2+50
       pgb_update(load,f)
       if(parseInt(load).toFixed(0) == 100){
-        url_option = selected_bucket+'/'+ f
+        url_option = selected_bucket+'/'+ f + '?uuid='+uuid
         $.ajax({type:'delete',url:'/api/v1/bucket/object/download/'+url_option})
       }
     }else{
@@ -214,13 +223,13 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
   },500)
 }
 
-let check_download_status= function(selected_bucket,file_name){
+let check_download_status= function(selected_bucket,file_name,uuid){
   console.log('check_download_status called ',file_name)
   var timer = {}
   p = 0
   ajax_flag[file_name] = 'not sending'
   timer[file_name] = setInterval(function(){  
-    url_option = selected_bucket+'/'+file_name
+    url_option = selected_bucket+'/'+file_name + '?uuid='+uuid
     console.log(ajax_flag[file_name],file_name)
     if(ajax_flag[file_name] == 'not sending'){
       ajax_flag [file_name] = 'sent'
@@ -231,7 +240,7 @@ let check_download_status= function(selected_bucket,file_name){
             clearInterval(timer[file_name])
             pgb_update(50,file_name)
             console.log('download cleared',file_name)
-            send_download_request(file_name)
+            send_download_request(file_name,uuid)
           }else{            
             p = parseInt((j['progress']).toFixed(0))/2
             console.log(file_name,p)

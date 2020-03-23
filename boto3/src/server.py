@@ -62,9 +62,16 @@ def buckets(bucket_name):
         result = OBJECT_BOTO3.delete_bucket(bucket_name)
         return jsonify(result)
 
-@app.route('/api/v1/init/',methods=['GET'])
-def uuid_init():
-    return jsonify({'uuid':uuid.uuid4()})
+@app.route('/api/v1/init/<file_name>/<uuid>/',methods=['PUT'])
+def init_percentage(uuid,file_name):
+    OBJECT_BOTO3.init_percentage(uuid,file_name)
+    if uuid in objects_highlevel.percentage:
+        save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
+        if not os.path.isdir(save_dir_path):
+            os.mkdir(save_dir_path)
+        return (jsonify({'uuid':uuid,'file_name':file_name}),200)
+    else:
+        return (jsonify({'error':'failed to initialize'}),500)
 
 @app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>',methods=['POST'])
 def upload_file(bucket_name,file_name):
@@ -126,9 +133,14 @@ def concat_file(bucket_name,file_name):
 
 @app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET','DELETE'])
 def download_file(bucket_name,file_name):
-    filepath = os.path.join(DOWNLOAD_SAVE_DIR,file_name)
+    uuid = request.args.get('uuid')
+    save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
+    filepath = os.path.join(save_dir_path,file_name)
+    if not os.path.isdir(save_dir_path):
+        os.mkdir(save_dir_path)
+    
     if request.method == 'PUT':
-        result = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath)
+        result = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath,uuid)
         return (jsonify({}),200)
     if request.method == 'GET':
         if os.path.isfile(filepath) == False:
@@ -136,19 +148,27 @@ def download_file(bucket_name,file_name):
             time.sleep(1)
             
         if os.path.isfile(filepath):
-            f = send_from_directory(DOWNLOAD_SAVE_DIR, file_name,as_attachment = True, attachment_filename = file_name)
+            f = send_from_directory(save_dir_path, file_name,as_attachment = True, attachment_filename = file_name)
             return f
         else:
             return (jsonify({}),404)
     if request.method == 'DELETE':
-        os.remove(filepath)
+        shutil.rmtree(save_dir_path)
         return(jsonify({}),200)
 
 @app.route('/api/v1/bucket/object/download/status/<bucket_name>/<file_name>',methods=['GET'])
 def download_status(bucket_name,file_name):
-    filepath = os.path.join(DOWNLOAD_SAVE_DIR,file_name)
+    uuid = request.args.get('uuid')
+    save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
+    if not os.path.isdir(save_dir_path):
+        os.mkdir(save_dir_path)
+    p = objects_highlevel.percentage[uuid]['p']
+    print('p = ',p,file_name)
+    return (jsonify({'progress':p}))
+'''    
+    filepath = os.path.join(save_dir_path,file_name)
     pattern = re.compile(r'{0}(?P<tag>\S*)'.format(file_name))
-    files = os.listdir(DOWNLOAD_SAVE_DIR)
+    files = os.listdir(save_dir_path)
     for item in files:
         result = pattern.match(item)
         if result:
@@ -156,15 +176,13 @@ def download_status(bucket_name,file_name):
                 print(result.group('tag'))
     if os.path.isfile(filepath):
         print(os.path.getsize(filepath))
-    if file_name in objects_highlevel.percentage:
-        p = objects_highlevel.percentage[file_name]
-    else:
-        p = 0
-    print('p= ',p,file_name)
-    return (jsonify({'progress':p}))
+'''    
+    
 
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>',methods=['POST'])
 def delete_file(bucket_name,file_name):
+    uuid = request.args.get('uuid')
+    objects_highlevel.delete_percentage(uuid)
     result = OBJECT_BOTO3.delete_file(bucket_name,file_name)
     return jsonify(result)
 

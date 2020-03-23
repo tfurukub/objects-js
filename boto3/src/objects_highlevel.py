@@ -21,11 +21,12 @@ percentage = {}
 
 class ProgressPercentage(object):
     
-    def __init__(self, file_size,file_name):
+    def __init__(self, file_size,file_name,uuid):
         self._size = float(file_size)
         self._seen_so_far = 0
         self._lock = threading.Lock()
         self._file_name = file_name
+        self._uuid = uuid
 
     def __call__(self, bytes_amount):
         # To simplify we'll assume this is hooked up
@@ -33,8 +34,8 @@ class ProgressPercentage(object):
         with self._lock:
             self._seen_so_far += bytes_amount
             global percentage
-            percentage[self._file_name] = (self._seen_so_far / self._size) * 100
-            print('percentage2 = ',percentage[self._file_name],self._file_name)
+            percentage[self._uuid]['p'] = (self._seen_so_far / self._size) * 100
+            print('percentage2 = ',percentage[self._uuid]['p'],self._file_name)
 
 class Objects_boto3():
     def __init__(self,accesskey,secretkey,endpoint,up,down):
@@ -54,6 +55,16 @@ class Objects_boto3():
             return e
         else:            
             return s3resource
+
+    def init_percentage(self,uuid,file_name):
+        global percentage
+        if uuid not in percentage:
+            percentage[uuid] = {'file_name':file_name,'p':0}
+            print(percentage[uuid]['file_name'],percentage[uuid]['p'])
+
+    def delete_percentage(self,uuid):
+        global percentage
+        del percentage[uuid]
 
     def list_bucket(self):
         s3resource = self.boto3_session()
@@ -97,13 +108,14 @@ class Objects_boto3():
         else:
             return('No File Exist. Can not upload')
 
-    def download_file(self,bucket_name,file_name,filepath):
+    def download_file(self,bucket_name,file_name,filepath,uuid):
         s3resource = self.boto3_session()
         percentage[file_name] = 0.0
         local_file = filepath
         remote_file = file_name
+        print('file path = ',filepath)
         file_size = s3resource.Object(bucket_name,remote_file).content_length
-        result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file))
+        result = s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file,uuid))
         return result
 
     def check_download_size(self,bucket_name,file_name):
