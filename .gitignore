@@ -3,3 +3,5 @@ boto3/src/secret.json
 *.pyc
 *.pyc
 boto3/src/__pycache__/objects_highlevel.cpython-37.pyc
+boto3/src/upload/*
+boto3/src/download/*
