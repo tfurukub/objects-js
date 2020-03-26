@@ -12,39 +12,39 @@ let pgb_initialize = function(files){
     
     
     
-        Object.keys(tag_txt).forEach(function(key) {
-            var val_pgb = this[key]; // this は obj
-            var val_body = style_txt[key]
-            $('#progress_bar').append(val_pgb)
-            $('#body_id').append(val_body)
-            pgb_tag = '#pgb_'+file_order[key]
-            lbl_tag = '#lbl_'+file_order[key]
+    Object.keys(tag_txt).forEach(function(key) {
+        var val_pgb = this[key]; // this は obj
+        var val_body = style_txt[key]
+        $('#progress_bar').append(val_pgb)
+        $('#body_id').append(val_body)
+        pgb_tag = '#pgb_'+file_order[key]
+        lbl_tag = '#lbl_'+file_order[key]
 
-            $(pgb_tag).progressbar({
-                value: 0,
-                max:100,
-                change: function(){
-                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
-                        var v = $(pgb_tag).progressbar("value");
-                        var txt = $(lbl_tag).text()
-                        var pattern = /^(\d+)\%/
-                        current_v = txt.match(pattern)
-                        
-                        if(current_v != null){
-                            if(v >= current_v[1]){
-                                $(lbl_tag).text(v + "%");
-                            }
-                        }else{
-                            $(lbl_tag).text(v + "%")
+        $(pgb_tag).progressbar({
+            value: 0,
+            max:100,
+            change: function(){
+                    lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                    var v = $(pgb_tag).progressbar("value");
+                    var txt = $(lbl_tag).text()
+                    var pattern = /^(\d+)\%/
+                    current_v = txt.match(pattern)
+                    
+                    if(current_v != null){
+                        if(v >= current_v[1]){
+                            $(lbl_tag).text(v + "%");
                         }
-                    },
-                    complete: function(){
-                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
-                        $(lbl_tag).text("Completed");
-                        console.log(key,' Completed')
+                    }else{
+                        $(lbl_tag).text(v + "%")
                     }
-                })
-          }, tag_txt)         
+                },
+                complete: function(){
+                    lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                    $(lbl_tag).text("Completed");
+                    console.log(key,' Completed')
+                }
+            })
+        }, tag_txt)         
     
 }
 /*let pgb_initialize = function(files){

@@ -164,6 +164,7 @@ let download_files_continue = function(){
     i++
     
   })
+  open_modal()
   pgb_initialize(files)
 
   uuid_list = {}
