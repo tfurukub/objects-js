@@ -1,4 +1,4 @@
-var num_sent = {}
+num_sent = {}
 let draw_bucket_list = function(){
      $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){
@@ -20,7 +20,7 @@ let draw_bucket_list2 = function(data){
   $('#number_of_buckets').append('# of Buckets = '+data.length)
 
   // 削除予定
-  $('#bucket-select').val('furukubo')
+  $('#bucket-select').val('123456')
 }
 
 let draw_object_list = function(data){
@@ -64,11 +64,13 @@ let upload_files = function(){
   files = this.files
   pgb_initialize(files)
   var d = {}
+  var worker = {}
+  sent_bytes = {}
   for(k=0;k<files.length;k++){
     var file_name = files[k].name
     var file_size = files[k].size
     var file = files[k]
-    var chunk_size = 1024*1024*100
+    var chunk_size = 1024*1024*10
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     var uuid = generateUuid()
@@ -80,18 +82,62 @@ let upload_files = function(){
     d1['chunk_number'] = chunk_number
     d1['slice_index'] = slice_index
     d1['num'] = k
+    d1['bucket'] = selected_bucket
+    d1['uuid'] = uuid
+    d1['sent_bytes'] = {}
     d[uuid] = d1
-    
+
     num_sent[file_name] = 0
     url_option = file_name + '/' + uuid + '/upload/'
+    sent_bytes[file_name] = {}
+
     $.ajax({type:'put',url:'/api/v1/init/'+url_option,
       success:function(j){
+        uuid_l = j['uuid']
         d2 = d[j['uuid']]
-        num = d2['num']
-        
+
+        worker[uuid_l] = {}
         for(i=0;i<d2['chunk_number'];i++){
-          file_part = files[num].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
-          result = send_upload_request(d2['file_name'],d2['file_size'],file_part,d2['chunk_size'],d2['chunk_number'],d2['slice_index'],selected_bucket,i,j['uuid'])
+          file_part = files[d2['num']].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
+          //result = send_upload_request(d2['file_name'],d2['file_size'],files[num],d2['chunk_size'],d2['chunk_number'],d2['slice_index'],selected_bucket,i,j['uuid'])
+          d2['files'] = file_part
+          d2['index'] = i
+          d2['sent_bytes'][i] = 0
+          
+          //worker[uuid_l][i] = new Worker('/static/js/worker.js')
+          //worker[uuid_l][i].addEventListener('message', function(e) {
+          worker = new Worker('/static/js/worker.js')
+          worker.addEventListener('message', function(e) {
+            if(e.data['status'] == 'complete'){
+              num_sent[e.data['file_name']] += 1
+              //console.log(e.data['index'],e.data['file_name'],num_sent[e.data['file_name']])
+              p_1 = parseInt((num_sent[e.data['file_name']]/e.data['chunk_number']*100/2).toFixed(0))
+              
+              if(num_sent[e.data['file_name']] == e.data['chunk_number']){
+                url_option = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
+                $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
+                  success: function(){
+                    $('#bucket-select').change()
+                  }
+                })
+                check_chunk_status(e.data['bucket'],e.data['file_name'],e.data['chunk_number'],e.data['file_size'],p_1,e.data['uuid'])
+                console.log(e.data)
+              }
+            }else{
+              d2['sent_bytes'][e.data['index']] = e.data['p']
+              obj = d2['sent_bytes']
+              p = 0
+              Object.keys(obj).forEach(function(key){
+                p += obj[key]
+              })
+              p_1 = parseInt(p/e.data['file_size']*100/2).toFixed(0)
+              pgb_update(p_1,e.data['file_name'])
+            }
+            
+          }, false)
+          //worker[uuid_l][i].postMessage(d2)
+          worker.postMessage(d2)
+          
           d2['slice_index'] += d2['chunk_size']
           
         }
@@ -104,7 +150,57 @@ let upload_files = function(){
   }
 }
 
-let send_upload_request = function(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i,uuid){
+
+let test = function(){
+/*
+  let send_upload_request = function(file_name,file_size,files,chunk_size,chunk_number,slice_index,selected_bucket,i,uuid){
+    var reader = new FileReader
+    var formData = new FormData
+    
+    var p_1 = 0
+    var p_2 = 0
+    
+    var file_part = files.slice(slice_index,slice_index+chunk_size)
+    
+    slice_index += chunk_size
+    i = slice_index/chunk_size-1
+    
+    reader.onload = function(){
+      formData.set(file_name,file_part)
+      var url_option = selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size + '&uuid='+uuid
+    
+      $.ajax({type:'post',url:'/api/v1/bucket/object/upload/'+url_option,data:formData,contentType:false,processData:false,
+        success: function(j){ 
+          console.log(file_name,i)
+          num_sent[file_name] += 1
+          p_1 = parseInt((num_sent[file_name]/chunk_number*100/2).toFixed(0))
+          pgb_update(p_1,file_name)
+          if(num_sent[file_name] == chunk_number){
+            
+            url_option = selected_bucket+'/'+file_name+'?num='+chunk_number+'&uuid='+j['uuid']
+            $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
+              success: function(){
+                $('#bucket-select').change()
+              }
+            })
+            check_chunk_status(selected_bucket,file_name,chunk_number,file_size,p_1,j['uuid'])
+          }
+          reader.abort()
+          reader = null
+          console.log('aborted',slice_index)
+          if(slice_index < files.size){
+            file_part = files.slice(slice_index,slice_index+chunk_size)
+    
+            send_upload_request(file_name,file_size,files,chunk_size,chunk_number,slice_index,selected_bucket,i,uuid)
+            
+          }
+        }
+      })
+    }
+    reader.readAsArrayBuffer(file_part)
+  }
+*/
+/*let send_upload_request = function(file_name,file_size,file_part,chunk_size,chunk_number,slice_index,selected_bucket,i,uuid){
   var reader = new FileReader
   var formData = new FormData
   var url_option
@@ -137,8 +233,8 @@ let send_upload_request = function(file_name,file_size,file_part,chunk_size,chun
     })
   }
   reader.readAsArrayBuffer(file_part)
+}*/
 }
-
 let download_files = function(){
   files = []
   i = 0

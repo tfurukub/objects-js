@@ -111,9 +111,10 @@ let generateUuid = function(){
 }
 
 let test_progress = function(){
-    $.ajax({type:'get',url:'/api/v1/init/',
-    success:function(j){
-        console.log(j['uuid'])
-    }
-    })
+    var worker = new Worker('/static/js/worker.js')
+    worker.addEventListener('message', function(e) {
+      console.log(e.data)
+    }, false)
+    d = {'a':'aaa','b':'bbb'}
+    worker.postMessage(d)
 }

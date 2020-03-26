@@ -116,7 +116,7 @@ def concat_file(bucket_name,file_name):
                     os.remove(os.path.join(save_dir_path,item))
                 return(jsonify({'error':'Files not sent correctly'}))
         
-        
+        print(files,files_ordered)
         with open(filepath,'wb') as savefile:
             for i in range(chunk_number):
                 data = open(os.path.join(save_dir_path,files_ordered[i]),'rb').read()
