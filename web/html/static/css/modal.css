@@ -5,6 +5,7 @@
     position: fixed;
     top: 0;
     width: 100%;
+    overflow-y: scroll;
 }
 .modal__bg{
     background:rgba(0,0,0,0.8);
