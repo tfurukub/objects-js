@@ -95,7 +95,6 @@ let upload_files = function(){
         uuid_l = j['uuid']
         d2 = d[j['uuid']]
 
-        worker[uuid_l] = {}
         for(i=0;i<d2['chunk_number'];i++){
           file_part = files[d2['num']].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
           d2['files'] = file_part
