@@ -10,6 +10,54 @@ let pgb_initialize = function(files){
         style_txt[file_name] = '<style type=\"text/css\">#lbl_'+String(i)+'{position: absolute;left: 50%;}</style>'
     }
     
+    
+    
+        Object.keys(tag_txt).forEach(function(key) {
+            var val_pgb = this[key]; // this は obj
+            var val_body = style_txt[key]
+            $('#progress_bar').append(val_pgb)
+            $('#body_id').append(val_body)
+            pgb_tag = '#pgb_'+file_order[key]
+            lbl_tag = '#lbl_'+file_order[key]
+
+            $(pgb_tag).progressbar({
+                value: 0,
+                max:100,
+                change: function(){
+                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                        var v = $(pgb_tag).progressbar("value");
+                        var txt = $(lbl_tag).text()
+                        var pattern = /^(\d+)\%/
+                        current_v = txt.match(pattern)
+                        
+                        if(current_v != null){
+                            if(v >= current_v[1]){
+                                $(lbl_tag).text(v + "%");
+                            }
+                        }else{
+                            $(lbl_tag).text(v + "%")
+                        }
+                    },
+                    complete: function(){
+                        lbl_tag = pgb_tag.replace(/pgb/,'lbl')
+                        $(lbl_tag).text("Completed");
+                        console.log(key,' Completed')
+                    }
+                })
+          }, tag_txt)         
+    
+}
+/*let pgb_initialize = function(files){
+    tag_txt = {}
+    style_txt = {}
+    num = files.length
+    for(i=0;i<num;i++){
+        file_name = files[i].name
+        file_order[file_name] = i
+        tag_txt[file_name] = '<p>'+file_name+'</p><div id=\"pgb_'+String(i)+'\">'+'<div id=\"lbl_'+String(i)+'\"></div>'+'</div>'
+        style_txt[file_name] = '<style type=\"text/css\">#lbl_'+String(i)+'{position: absolute;left: 50%;}</style>'
+    }
+    
     progress_window()
     child.onload = function(){
         Object.keys(tag_txt).forEach(function(key) {
@@ -46,11 +94,12 @@ let pgb_initialize = function(files){
                 })
           }, tag_txt)         
     }
-}
+}*/
 
 let pgb_update = function(p,file_name){
     pgb_tag = '#pgb_'+file_order[file_name]
-    $(pgb_tag,child.document).progressbar('value',parseInt(p,10))
+    //$(pgb_tag,child.document).progressbar('value',parseInt(p,10))
+    $(pgb_tag).progressbar('value',parseInt(p,10))
 }
 let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
@@ -110,11 +159,14 @@ let generateUuid = function(){
     return chars.join("");
 }
 
-let test_progress = function(){
-    var worker = new Worker('/static/js/worker.js')
-    worker.addEventListener('message', function(e) {
-      console.log(e.data)
-    }, false)
-    d = {'a':'aaa','b':'bbb'}
-    worker.postMessage(d)
+let open_modal = function(){
+
+    $('.js-modal').fadeIn();
+    return false
+
+}
+
+let close_modal = function(){
+    $('.js-modal').fadeOut();
+    return false;
 }

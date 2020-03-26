@@ -62,6 +62,7 @@ let delete_bucket = function(){
 
 let upload_files = function(){
   files = this.files
+  open_modal()
   pgb_initialize(files)
   var d = {}
   sent_bytes = {}
@@ -124,6 +125,7 @@ let upload_files = function(){
               })
               p_1 = parseInt(p/e.data['file_size']*100/2).toFixed(0)
               pgb_update(p_1,e.data['file_name'])
+              console.log(e.data['file_name'],d2['sent_bytes'])
             }
             
           }, false)
