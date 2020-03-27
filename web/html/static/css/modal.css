@@ -1,24 +1,11 @@
+.modal-dialog,
+.modal-content {
+    height: 160px;
+    max-height: 80vh;
+}
 
-.modal{
-    display: none;
-    height: 60vh;
-    position: fixed;
-    top: 0;
-    width: 100%;
+.modal-body {
+    /* 100% = dialog height, 120px = header + footer */
+    max-height: calc(100% - 120px);
     overflow-y: scroll;
-}
-.modal__bg{
-    background:rgba(0,0,0,0.8);
-    height: 100vh;
-    position: absolute;
-    width: 100%;
-}
-.modal__content{
-    background: #fff;
-    left: 50%;
-    padding: 40px;
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%,-50%);
-    width: 60%;
 }

@@ -62,8 +62,9 @@ let delete_bucket = function(){
 
 let upload_files = function(){
   files = this.files
-  open_modal()
+  
   pgb_initialize(files)
+  open_modal(files.length)
   var d = {}
   sent_bytes = {}
   for(k=0;k<files.length;k++){
@@ -121,11 +122,14 @@ let upload_files = function(){
               obj = d2['sent_bytes']
               p = 0
               Object.keys(obj).forEach(function(key){
-                p += obj[key]
+                p += obj[key]                
               })
               p_1 = parseInt(p/e.data['file_size']*100/2).toFixed(0)
+              if(p_1 > 50){
+                p_1 = 50
+              }
               pgb_update(p_1,e.data['file_name'])
-              console.log(e.data['file_name'],d2['sent_bytes'])
+              //console.log(e.data['file_name'],d2['sent_bytes'])
             }
             
           }, false)
@@ -164,9 +168,8 @@ let download_files_continue = function(){
     i++
     
   })
-  open_modal()
   pgb_initialize(files)
-
+  open_modal(checked.length)
   uuid_list = {}
   checked.each(function(){
     f = $(this).val()
@@ -203,6 +206,7 @@ let send_download_request = function(f,uuid){
     if(this.status == 200){
       var load = (100*evt.loaded/evt.total|0)/2+50
       pgb_update(load,f)
+      //console.log('in xhr.onprogress',load,f)
       if(parseInt(load).toFixed(0) == 100){
         url_option = selected_bucket+'/'+ f + '?uuid='+uuid
         $.ajax({type:'delete',url:'/api/v1/bucket/object/download/'+url_option})
@@ -246,6 +250,7 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
         p_3 = parseInt((j['s3_progress']/4).toFixed(0))
         
         pgb_update(p_1+p_2+p_3,file_name)
+        //console.log(p_1,p_2,p_3,file_name)
         if(j['s3_progress'] == String(100)){
         
           pgb_update(100,file_name)

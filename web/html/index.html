@@ -7,6 +7,7 @@
     <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
     <link  href="/static/css/jquery-ui.css" rel="stylesheet" >
     <link  href="/static/css/modal.css" rel="stylesheet" >
+    
     <script src="/static/js/jquery-2.2.4.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.min.js"></script>
@@ -14,23 +15,29 @@
     <script src="/static/js/bucket_list.js"></script>
     <script src="/static/js/obj_util.js"></script>
   </head>
-
-  <body>
-  <div class="container">
-    
-    <div class="modal js-modal" id="p_modal">
-      <div class="modal__bg js-modal-close"></div>
-      <div class="modal__content">
-        <body id="body_id">
-    
-          <div id="progress_bar">
+<div class="modal fade" id="progress_modal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Progress</h4>
+            <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
           </div>
-        
-        </body>
-        <button id="close_modal">CLOSE</button>
-      </div>
-    </div>
-  
+          <div class="modal-body">
+            <body id="body_id">
+              <div id="progress_bar">
+              </div>
+          </body>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+  <body>
+    
+  <div class="container">
   <div class="row">
   <div class="col-8">
     <button id="open_window" type="button">open window</button>
@@ -104,7 +111,6 @@
 </div>
 
 <script>
-  var child
   $('#bucket-select').change(bucket_changed)
   $('#update').click(update_key)
   $('#info_file').change(parse_info_file)
@@ -116,7 +122,8 @@
   $('#all_checks').click(all_select)
   $('#object_list').click(ind_select)
   $('#refresh_object_list').click(refresh_object_list)
-  $('#close_modal').click(close_modal)
+  $('#open_window').click(open_modal)
+  $('#create_prb').click(test)
 
 
 </script>
