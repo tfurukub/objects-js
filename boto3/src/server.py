@@ -9,7 +9,7 @@ import objects_highlevel
 
 ACCESS_KEY = ''
 SECRET_KEY = ''
-ENDPOINT_URL = ''
+ENDPOINT_URL = 'http://0.0.0.0'
 UPLOAD_SAVE_DIR = '/src/upload/'
 DOWNLOAD_SAVE_DIR = '/src/download/'
 SECRET_FILE = 'secret.json'
@@ -28,15 +28,16 @@ app = Flask('pdf creator')
 
 @app.route('/api/v1/info/',methods=['PUT'])
 def configure_info():
-    body = request.get_data().decode().strip()
+    #body = request.get_data().decode().strip()
     
     if os.path.isfile(os.path.join('/src/',SECRET_FILE)):
         with open(os.path.join('/src/',SECRET_FILE),'r') as f:
             d = json.load(f)
+            OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
+            return jsonify({}),200
     else:
-        d = json.loads(body)
-    OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
-    return jsonify({},200)
+        return jsonify({'error','AWS key file (secret.json) does not exist'}),500
+    
 
 #
 # Bucket
@@ -44,22 +45,51 @@ def configure_info():
 
 @app.route('/api/v1/bucket/',methods=['GET'])
 def bucket_list():
-    b_list = OBJECT_BOTO3.list_bucket()
-    return jsonify(b_list)
+    status,b_list = OBJECT_BOTO3.list_bucket()
+    if status == True:
+        return jsonify(b_list),200
+    else:
+        response = make_response(json.dumps(status),500)
+        return response
 
 @app.route('/api/v1/bucket/object/<bucket_name>/',methods=['GET'])
 def object_list(bucket_name):
-    o_list = OBJECT_BOTO3.list_object(bucket_name)
-    return jsonify(o_list)
+    status,o_list = OBJECT_BOTO3.list_object(bucket_name)
+    if status == True:
+        return jsonify(o_list),200
+    else:
+        response = make_response(json.dumps(status),500)
+        return response
 
 @app.route('/api/v1/bucket/<bucket_name>',methods=['PUT','DELETE'])
 def buckets(bucket_name):
     if request.method == 'PUT':
-        result = OBJECT_BOTO3.create_bucket(bucket_name)
-        return jsonify(result)
+        status,result = OBJECT_BOTO3.create_bucket(bucket_name)
+        if status == True:
+            return jsonify({}),200
+        else:
+            response = make_response(json.dumps(status),500)
+            return response
+
     if request.method == 'DELETE':
-        result = OBJECT_BOTO3.delete_bucket(bucket_name)
-        return jsonify(result)
+        status,b_list = OBJECT_BOTO3.list_bucket()
+        if status == True:
+            if bucket_name in b_list:
+                status,result = OBJECT_BOTO3.delete_bucket(bucket_name)
+                if status == True:
+                    return jsonify(result),200
+                else:
+                    response = make_response(json.dumps(status),500)
+                    return response
+            else:
+                e = 'bucket name = '+bucket_name + ' does not exist'
+                result = {'Error':{'Message':str(e)}}
+                response = make_response(json.dumps(result),500)
+                return response
+        else:
+            response = make_response(json.dumps(status),500)
+            return response
+
 
 @app.route('/api/v1/init/<file_name>/<uuid>/<op>/',methods=['PUT'])
 def init_percentage(uuid,file_name,op):
@@ -85,16 +115,15 @@ def upload_file(bucket_name,file_name):
     save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
     if request.method == 'POST':
         if os.path.isdir(save_dir_path) == False:
-            return (jsonify({}),500)
+            return jsonify({}),500
         file = request.files[file_name]
         file_name = request.args.get('index')+'_'+file_name
         file.save(os.path.join(save_dir_path,file_name))
-        return(jsonify({'uuid':uuid}),200)
+        return jsonify({'uuid':uuid}),200
     if request.method == 'DELETE':
         shutil.rmtree(save_dir_path)
         OBJECT_BOTO3.delete_percentage(uuid)
-        print(uuid,file_name)
-        return(jsonify({}),200)
+        return jsonify({}),200
 
 
 @app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['GET','POST'])
@@ -114,16 +143,15 @@ def concat_file(bucket_name,file_name):
             else:
                 for item in files_ordered:
                     os.remove(os.path.join(save_dir_path,item))
-                return(jsonify({'error':'Files not sent correctly'}))
+                return jsonify({'error':'Files not sent correctly'})
         
-        print(files,files_ordered)
         with open(filepath,'wb') as savefile:
             for i in range(chunk_number):
                 data = open(os.path.join(save_dir_path,files_ordered[i]),'rb').read()
                 savefile.write(data)
                 savefile.flush()
         result = OBJECT_BOTO3.upload_file(bucket_name,file_name,filepath,uuid)
-        return(jsonify({}),200)
+        return jsonify({}),200
 
     if request.method == 'GET':
         concat_size = 0
@@ -133,7 +161,7 @@ def concat_file(bucket_name,file_name):
 
         if p == 100:
             return(jsonify({'concat_size':concat_size,'s3_progress':p,'uuid':uuid}),200)
-        return(jsonify({'concat_size':concat_size,'s3_progress':p,'uuid':uuid}),200)
+        return jsonify({'concat_size':concat_size,'s3_progress':p,'uuid':uuid}),200
 
 @app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET','DELETE'])
 def download_file(bucket_name,file_name):
@@ -144,7 +172,7 @@ def download_file(bucket_name,file_name):
         os.mkdir(save_dir_path)
     
     if request.method == 'PUT':
-        result = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath,uuid)
+        OBJECT_BOTO3.download_file(bucket_name,file_name,filepath,uuid)
         return (jsonify({}),200)
     if request.method == 'GET':
         i = 0
@@ -173,7 +201,7 @@ def download_status(bucket_name,file_name):
     if not os.path.isdir(save_dir_path):
         os.mkdir(save_dir_path)
     p = OBJECT_BOTO3.per[uuid]['p']
-    return (jsonify({'progress':p}))
+    return (jsonify({'progress':p}),200)
  
     
 

@@ -1,11 +1,11 @@
 num_sent = {}
 let draw_bucket_list = function(){
      $.ajax({type:'get', url:'/api/v1/bucket/',
-    success:function(j, status, xhr){
+    success:function(j, status, xhr){      
       draw_bucket_list2(j)
     }, 
-    error:function(j){
-      console.log(j)
+    error:function(j,status){
+      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
     }
   })
 }
@@ -41,9 +41,10 @@ let create_bucket = function(){
   $.ajax({type:'put', url:'/api/v1/bucket/'+bucket_name,
     success:function(j, status, xhr){
       draw_bucket_list()
+      alert(bucket_name+' is successfully created')
     }, 
     error:function(j){
-      console.log(j)
+      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
     }
   })
 }
@@ -52,10 +53,11 @@ let delete_bucket = function(){
   var bucket_name = $('#buckets').val()
   $.ajax({type:'delete', url:'/api/v1/bucket/'+bucket_name,
     success:function(j, status, xhr){
-      bucket_changed()
+      draw_bucket_list()
+      alert(bucket_name+' is successfully deleted')
     }, 
     error:function(j){
-      console.log(j)
+      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
     }
   })
 }
@@ -219,13 +221,11 @@ let send_download_request = function(f,uuid){
   xhr.onreadystatechange = function (e) {
     if (this.readyState == 4 && this.status == 200) {
       var blob = this.response;
-
       //IE, Edge とその他で処理の切り分け
       if (window.navigator.msSaveBlob) {
         window.navigator.msSaveBlob(blob, f);
       } else {
         var a = document.createElement("a");
-        // IE11 は URL API をサポートしてない
         var url = window.URL;
         a.href = url.createObjectURL(new Blob([blob],
                                     { type: blob.type }));
