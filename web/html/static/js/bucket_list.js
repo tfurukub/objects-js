@@ -11,29 +11,40 @@ let draw_bucket_list = function(){
 }
 
 let draw_bucket_list2 = function(data){
-  $('#bucket-select').empty()
-  $("#bucket-select").append($("<option>").val('').text(''))
-  data.forEach(function(b_name){
-    $("#bucket-select").append($("<option>").val(b_name).text(b_name))
+  $.ajax({type:'get', url:'/api/v1/bucket/size/',
+    success:function(j){
+      
+      $('#viewing_num').text('Viewing all '+data.length+'  Buckets')
+      $('#bucket_list').empty()
+      data.forEach(function(b_name){
+        var txt_base = '<tr><td><input type=\"checkbox\" value=\"'+b_name+'\" name=\"r_chk\"></td><td>'
+        tag = '<a href=\"javascript:bucket_clicked(\''+b_name+'\')\">'+b_name+'</a>'
+        var items = [tag,convertByteSize(j['size'][b_name]),j['num'][b_name]]
+        txt = createbody(txt_base,items)
+        $('#bucket_list').append(txt)
+      })
+      $('#object_list_wrapper').hide()
+      $('#bucket_list_wrapper').show()
+    }
   })
-  $('#number_of_buckets').empty()
-  $('#number_of_buckets').append('# of Buckets = '+data.length)
-
-  // 削除予定
-  $('#bucket-select').val('123456')
 }
 
 let draw_object_list = function(data){
+  
   $('#object_list').empty()
   var k = 1
   var txt = ''
+  
   for (key in data){
     var items = [k,key,convertByteSize(data[key])]
-    txt = createbody(items)
+    var txt_base = '<tr><td><input type=\"checkbox\" value=\"'+key+'\" name=\"r_chk\"></td><td>'
+    txt = createbody(txt_base,items)
     $('#object_list').append(txt)
     k++
   }
   ind_select()
+  $('#bucket_list_wrapper').hide()
+  $('#object_list_wrapper').show()
 }
 
 let create_bucket = function(){
@@ -64,7 +75,6 @@ let delete_bucket = function(){
 
 let upload_files = function(){
   files = this.files
-  
   pgb_initialize(files)
   open_modal(files.length)
   var d = {}
@@ -77,7 +87,7 @@ let upload_files = function(){
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     var uuid = generateUuid()
-    var selected_bucket = $('#bucket-select option:selected').text()
+    var selected_bucket = $('#object_list_wrapper').val()
     d1 = {}
     d1['file_name'] = file_name
     d1['file_size'] = file_size
@@ -114,7 +124,7 @@ let upload_files = function(){
                 url_option = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
                 $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
                   success: function(){
-                    $('#bucket-select').change()
+                    bucket_clicked(e.data['bucket'])
                   }
                 })
                 check_chunk_status(e.data['bucket'],e.data['file_name'],e.data['chunk_number'],e.data['file_size'],p_1,e.data['uuid'])
@@ -150,7 +160,7 @@ let upload_files = function(){
 let download_files = function(){
   files = []
   i = 0
-  selected_bucket = $('#bucket-select option:selected').text()
+  selected_bucket = $('#object_list_wrapper').val()
   checked = $("input[name=r_chk]:checked")
   if(checked.length == 0){
     alert('Please select files')
@@ -162,7 +172,7 @@ let download_files = function(){
 let download_files_continue = function(){
   files = []
   i = 0
-  selected_bucket = $('#bucket-select option:selected').text()
+  selected_bucket = $('#object_list_wrapper').val()
   checked = $("input[name=r_chk]:checked")
   checked.each(function(){
     f = $(this).val()
@@ -194,7 +204,7 @@ let download_files_continue = function(){
 }
 
 let send_download_request = function(f,uuid){
-  selected_bucket = $('#bucket-select option:selected').text()
+  selected_bucket = $('#object_list_wrapper').val()
   //check_download_status(selected_bucket,f)
   var url = '/api/v1/bucket/object/download/'+selected_bucket+'/'+f + '?uuid='+uuid
   var xhr = new XMLHttpRequest();
@@ -286,12 +296,12 @@ let delete_files = function(){
   if($("input[name=r_chk]:checked").length == 0){
     alert('Please select files')
   }
-  selected_bucket = $('#bucket-select option:selected').text()
+  selected_bucket = $('#object_list_wrapper').val()
   $("input[name=r_chk]:checked").each(function(){
     f = $(this).val()
     $.ajax({type:'post', url:'/api/v1/bucket/object/delete/'+selected_bucket+'/'+f,
       success:function(j, status, xhr){
-        $('#bucket-select').change()
+        bucket_clicked(selected_bucket)
       }, 
       error:function(j){
         console.log(j)
@@ -302,13 +312,42 @@ let delete_files = function(){
 
 let bucket_changed = function(){
   var val = $(this).val()
-  $.ajax({t3ype:'get', url:'/api/v1/bucket/object/' + val,
+  $.ajax({type:'get', url:'/api/v1/bucket/object/' + val,
     success:function(j, status, xhr){
       draw_object_list(j)
     }, 
     error:function(d){
 
     }
+  })
+}
+
+let bucket_clicked = function(bucket_name){
+  $.ajax({type:'get', url:'/api/v1/bucket/object/' + bucket_name,
+    success:function(j, status, xhr){
+      $('#object_list_header').text('Object List (Bucket Name = '+bucket_name+' )')
+      $('#object_list_wrapper').val(bucket_name)
+      draw_object_list(j)
+    }, 
+    error:function(d){
+
+    }
+  })
+}
+
+let connect_objects = function(){
+  var button = $(this);
+  button.attr("disabled", true)
+  $.ajax({type:'put', url:'/api/v1/connect/',
+      success: function(json_data) {
+          draw_bucket_list()
+      },
+      error: function() {
+          alert("Server Error. Pleasy try again later.");
+      },
+      complete: function() {
+          button.attr("disabled", false);
+      }
   })
 }
 
@@ -361,8 +400,4 @@ let parse_info_file = function(){
       $('#secret_key').val(secret_key[1])
     }
   }
-}
-
-let refresh_object_list = function(){
-  $('#bucket-select').change()
 }

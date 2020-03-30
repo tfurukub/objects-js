@@ -112,6 +112,28 @@ class Objects_boto3():
             status = True
             return status,result
 
+    def bucket_info(self):
+        status,bucket_list = self.list_bucket()
+        size_list = {}
+        num_list = {}
+        try:
+            for bucket_name in bucket_list:
+                bucket = self.s3resource.Bucket(bucket_name)
+                size = 0
+                num = 0
+                for obj in bucket.objects.all():
+                    size += obj.size
+                    num += 1
+                size_list[bucket_name] = size
+                num_list[bucket_name] = num
+        except Exception as e:
+            print('other error',e)
+            status = {'Error':{'Message':str(e)}}
+            return status,'',''
+        else:
+            status = True
+            print(size_list)
+            return status,size_list,num_list
 
     def list_object(self,bucket_name):
         #s3resource = self.boto3_session()

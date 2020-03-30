@@ -26,8 +26,8 @@ app = Flask('pdf creator')
 # Configure KEY
 #
 
-@app.route('/api/v1/info/',methods=['PUT'])
-def configure_info():
+@app.route('/api/v1/connect/',methods=['PUT'])
+def connect_to_objects():
     #body = request.get_data().decode().strip()
     
     if os.path.isfile(os.path.join('/src/',SECRET_FILE)):
@@ -48,6 +48,16 @@ def bucket_list():
     status,b_list = OBJECT_BOTO3.list_bucket()
     if status == True:
         return jsonify(b_list),200
+    else:
+        response = make_response(json.dumps(status),500)
+        return response
+    
+@app.route('/api/v1/bucket/size/',methods=['GET'])
+def bucket_info():
+    status,size_list,num_list = OBJECT_BOTO3.bucket_info()
+    if status == True:
+        d = {'size':size_list,'num':num_list}
+        return jsonify(d),200
     else:
         response = make_response(json.dumps(status),500)
         return response

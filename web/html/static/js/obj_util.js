@@ -98,10 +98,10 @@ let ind_select = function(){
     }
 }
 
-let createbody = function(items){
-    txt = '<tr><td><input type=\"checkbox\" value=\"'+items[1]+'\" name=\"r_chk\"></td><td>'
+let createbody = function(txt,items){
+    
     items.forEach(function(item){
-            txt += item + '</td><td>'
+        txt += item + '</td><td>'
     })
     txt = txt.slice(0,-4)+'</tr>'
     return txt
@@ -118,7 +118,7 @@ let convertByteSize = function(size) {
             }
         }
     }
-    return Math.round(size, 2)+ext;
+    return Math.round(size*100)/100+ext;
 }
 
 let generateUuid = function(){
@@ -156,13 +156,5 @@ let open_modal = function(file_num){
 }
 
 let test = function(){
-    console.log('aaa')
-    tag_base = '<div id= class=\"progress-bar progress-bar-striped progress-bar-animated\" role=\"progressbar\" aria-valuenow= aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: >text</div>'
-    p1 = /id=/
-    p2 = /aria-valuenow=/
-    p3 = /width:/
-    p4 = /text/
-    tag_base = tag_base.replace(p1,'id=pgb0').replace(p2,'aria-valuenow=\"'+parseInt(10)+'\"').replace(p3,'width: '+parseInt(10)+'%\"').replace(p4,parseInt(10)+'%')
-    console.log(tag_base)
-    $('#progress_bar').append(tag_base)
+    $('#object_list_wrapper').show()
 }
