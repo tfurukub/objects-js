@@ -34,9 +34,9 @@ def connect_to_objects():
         with open(os.path.join('/src/',SECRET_FILE),'r') as f:
             d = json.load(f)
             OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
-            return jsonify({}),200
+            return jsonify(d),200
     else:
-        return jsonify({'error','AWS key file (secret.json) does not exist'}),500
+        return jsonify({'error':'AWS key file (secret.json) does not exist'}),500
     
 
 #

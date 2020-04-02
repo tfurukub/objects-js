@@ -7,7 +7,7 @@
     <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
     <link  href="/static/css/jquery-ui.css" rel="stylesheet" >
     <link  href="/static/css/modal.css" rel="stylesheet" >
-    
+    <link  href="/static/css/loading.css" rel="stylesheet" >
     <script src="/static/js/jquery-2.2.4.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
     <script src="/static/js/bootstrap-4.3.1.min.js"></script>
@@ -62,11 +62,7 @@
   <div class="container">
   <div class="row">
   <div class="col-12">
-    <button id="open_window" type="button">open window</button>
-    <button id="create_prb" type="button">create progress bar</button>
-    <button id="prb" type="button">prb</button>
-    <br>
-    <button id="connect_objects" type="button" class="btn btn-primary btn-large">Connect To Objects</button>
+    <button id="connect_objects" type="button" class="btn btn-primary btn-large"></button>
     <div id="bucket_list_wrapper" style="display: none">
       <h4 id="viewing_num">Viewing all Buckets</h4>
       <table class="table table-striped table-bordered" style="width:100%">
@@ -108,6 +104,7 @@
 </div>
 
 <script>
+  get_server_info()
   $('#bucket-select').change(bucket_changed)
   $('#update').click(update_key)
   $('#info_file').change(parse_info_file)

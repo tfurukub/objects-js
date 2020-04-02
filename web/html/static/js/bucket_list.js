@@ -1,6 +1,6 @@
 num_sent = {}
 let draw_bucket_list = function(){
-     $.ajax({type:'get', url:'/api/v1/bucket/',
+  $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){      
       draw_bucket_list2(j)
     }, 
@@ -83,7 +83,7 @@ let upload_files = function(){
     var file_name = files[k].name
     var file_size = files[k].size
     var file = files[k]
-    var chunk_size = 1024*1024*100
+    var chunk_size = 1024*1024*1000
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     var uuid = generateUuid()
@@ -335,18 +335,39 @@ let bucket_clicked = function(bucket_name){
   })
 }
 
+let get_server_info = function(){
+  $.ajax({type:'put', url:'/api/v1/connect/',
+    success: function(j){
+      $('#connect_objects').text('Connect to '+j['endpoint_url'])
+    },
+    error: function(j){
+      alert(j['responseJSON']['error'])
+    }
+  })
+}
 let connect_objects = function(){
   var button = $(this);
   button.attr("disabled", true)
+  dispLoading($('#connect_objects').text().replace('Connect','Connecting'))
+
   $.ajax({type:'put', url:'/api/v1/connect/',
       success: function(json_data) {
-          draw_bucket_list()
+        $.ajax({type:'get', url:'/api/v1/bucket/',
+          success:function(j, status, xhr){      
+            draw_bucket_list2(j)
+            removeLoading()
+            button.attr("disabled", false)
+            $('#connect_objects').hide()
+          }, 
+          error:function(j,status){
+            alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
+            removeLoading()
+            button.attr("disabled", false)
+          }
+        })
       },
       error: function() {
           alert("Server Error. Pleasy try again later.");
-      },
-      complete: function() {
-          button.attr("disabled", false);
       }
   })
 }
