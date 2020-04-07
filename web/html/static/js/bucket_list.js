@@ -1,57 +1,14 @@
 num_sent = {}
-let draw_bucket_list = function(){
-  $.ajax({type:'get', url:'/api/v1/bucket/',
-    success:function(j, status, xhr){      
-      draw_bucket_list2(j)
-    }, 
-    error:function(j,status){
-      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
-    }
-  })
-}
-
-let draw_bucket_list2 = function(data){
-  $.ajax({type:'get', url:'/api/v1/bucket/size/',
-    success:function(j){
-      
-      $('#viewing_num').text('Viewing all '+data.length+'  Buckets')
-      $('#bucket_list').empty()
-      data.forEach(function(b_name){
-        var txt_base = '<tr><td><input type=\"checkbox\" value=\"'+b_name+'\" name=\"r_chk\"></td><td>'
-        tag = '<a href=\"javascript:bucket_clicked(\''+b_name+'\')\">'+b_name+'</a>'
-        var items = [tag,convertByteSize(j['size'][b_name]),j['num'][b_name]]
-        txt = createbody(txt_base,items)
-        $('#bucket_list').append(txt)
-      })
-      $('#object_list_wrapper').hide()
-      $('#bucket_list_wrapper').show()
-    }
-  })
-}
-
-let draw_object_list = function(data){
-  
-  $('#object_list').empty()
-  var k = 1
-  var txt = ''
-  
-  for (key in data){
-    var items = [k,key,convertByteSize(data[key])]
-    var txt_base = '<tr><td><input type=\"checkbox\" value=\"'+key+'\" name=\"r_chk\"></td><td>'
-    txt = createbody(txt_base,items)
-    $('#object_list').append(txt)
-    k++
-  }
-  ind_select()
-  $('#bucket_list_wrapper').hide()
-  $('#object_list_wrapper').show()
-}
-
 let create_bucket = function(){
-  var bucket_name = $('#buckets').val()
+  $('.modal-content').css('height','200px')
+  $('#create_bucket_modal').modal('show')
+}
+
+let input_bucket_name = function(){
+  var bucket_name = $('#create_bucket_text').val()
   $.ajax({type:'put', url:'/api/v1/bucket/'+bucket_name,
     success:function(j, status, xhr){
-      draw_bucket_list()
+      bucket_list_updated()
       alert(bucket_name+' is successfully created')
     }, 
     error:function(j){
@@ -61,16 +18,23 @@ let create_bucket = function(){
 }
 
 let delete_bucket = function(){
-  var bucket_name = $('#buckets').val()
-  $.ajax({type:'delete', url:'/api/v1/bucket/'+bucket_name,
-    success:function(j, status, xhr){
-      draw_bucket_list()
-      alert(bucket_name+' is successfully deleted')
-    }, 
-    error:function(j){
-      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
-    }
-  })
+  checked = $("input[name=r_chk]:checked")
+  if(checked.length == 0){
+    alert('Please select files')
+  }else if(checked.length > 1){
+    alert('Please select only one bucket')
+  }else{
+    bucket_name = checked.val()
+    $.ajax({type:'delete', url:'/api/v1/bucket/'+bucket_name,
+      success:function(j, status, xhr){
+        bucket_list_updated()
+        alert(bucket_name+' is successfully deleted')
+      }, 
+      error:function(j){
+        alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
+      }
+    })
+  }
 }
 
 let upload_files = function(){
@@ -121,6 +85,7 @@ let upload_files = function(){
               num_sent[e.data['file_name']] += 1
               p_1 = parseInt((num_sent[e.data['file_name']]/e.data['chunk_number']*100/2).toFixed(0))              
               if(num_sent[e.data['file_name']] == e.data['chunk_number']){
+                console.log(e.data['file_name'])
                 url_option = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
                 $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
                   success: function(){
@@ -310,28 +275,23 @@ let delete_files = function(){
   })
 }
 
-let bucket_changed = function(){
-  var val = $(this).val()
-  $.ajax({type:'get', url:'/api/v1/bucket/object/' + val,
-    success:function(j, status, xhr){
-      draw_object_list(j)
-    }, 
-    error:function(d){
+let bucket_list_updated = function(){
+  $('#bucket_table').DataTable().ajax.reload()
+}
 
-    }
-  })
+let back_to_bucket_list = function(){
+  $('#object_list_wrapper').hide()
+  $('#bucket_table').DataTable().ajax.reload()
+  $('#bucket_list_wrapper').show()
+  
 }
 
 let bucket_clicked = function(bucket_name){
-  $.ajax({type:'get', url:'/api/v1/bucket/object/' + bucket_name,
-    success:function(j, status, xhr){
-      $('#object_list_header').text('Object List (Bucket Name = '+bucket_name+' )')
-      $('#object_list_wrapper').val(bucket_name)
-      draw_object_list(j)
-    }, 
-    error:function(d){
-
-    }
+  $('#object_table').DataTable().ajax.url('/api/v1/bucket/object/'+bucket_name+'/')
+  $('#object_table').DataTable().ajax.reload(function(){
+    $('#object_list_wrapper').val(bucket_name)
+    $('#bucket_list_wrapper').hide()
+    $('#object_list_wrapper').show()
   })
 }
 
@@ -349,76 +309,61 @@ let connect_objects = function(){
   var button = $(this);
   button.attr("disabled", true)
   dispLoading($('#connect_objects').text().replace('Connect','Connecting'))
-
-  $.ajax({type:'put', url:'/api/v1/connect/',
-      success: function(json_data) {
-        $.ajax({type:'get', url:'/api/v1/bucket/',
-          success:function(j, status, xhr){      
-            draw_bucket_list2(j)
-            removeLoading()
-            button.attr("disabled", false)
-            $('#connect_objects').hide()
-          }, 
-          error:function(j,status){
-            alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
-            removeLoading()
-            button.attr("disabled", false)
-          }
-        })
-      },
-      error: function() {
-          alert("Server Error. Pleasy try again later.");
-      }
+  
+  $.ajax({type:'get', url:'/api/v1/bucket/',
+    success:function(j, status, xhr){
+      Initialize_datatables()     
+      removeLoading()
+      button.attr("disabled", false)
+      $('#bucket_table').DataTable().ajax.url('/api/v1/bucket/info/')
+      $('#bucket_table').DataTable().ajax.reload(function(){
+        $('#bucket_list_wrapper').show()
+      })
+    }, 
+    error:function(j,status){
+      alert(JSON.parse(unescape(j['responseText']))['Error']['Message'])
+    }
   })
 }
 
-let update_key = function(){
-   // 多重送信を防ぐため通信完了までボタンをdisableにする
-   var button = $(this);
-   button.attr("disabled", true);
-   // 各フィールドから値を取得してJSONデータを作成
-   var data = {
-       endpoint_url: 'http://'+$('#endpoint_url').val(),
-       access_key: $("#access_key").val(),
-       secret_key: $("#secret_key").val()
+let Initialize_datatables = function(){
+   // Initialize DataTables
+   $('#bucket_table').DataTable({
+    "ajax": '/api/v1/dummy/',
+    'columnDefs': [{
+        'targets': 0,
+        'searchable': false,
+        'orderable': false,
+        'className': 'dt-body-center',
+        'render': function (data, type, full, meta){
+            //return '<input type="checkbox" name="r_chk" value="' + $('<div/>').text(data).html() + '">';
+            return '<input type="checkbox" name="r_chk" value="' + data + '">'
+        }
+     },
+     {
+      'targets': 1,
+      //'searchable': false,
+      //'orderable': false,
+      //'className': 'dt-body-center',
+      'render': function (data, type, full, meta){
+          return '<a href=\"javascript:bucket_clicked(\''+data+'\')\">'+data+'</a>'
+      }
    }
-   update_key2(data,button)
-  }
+    ],
+    'order': [[1, 'asc']],
+  })
 
-  let update_key2 = function(data,button){
-
-   // 通信実行
-   $.ajax({
-       type:"put",                // method = "POST"
-       url:"/api/v1/info/",        // POST送信先のURL
-       data:JSON.stringify(data),  // JSONデータ本体
-       contentType: 'application/json', // リクエストの Content-Type
-       dataType: "json",           // レスポンスをJSONとしてパースする
-       success: function(json_data) {   // 200 OK時
-           draw_bucket_list()
-       },
-       error: function() {         // HTTPエラー時
-           alert("Server Error. Pleasy try again later.");
-       },
-       complete: function() {      // 成功・失敗に関わらず通信が終了した際の処理
-           button.attr("disabled", false);  // ボタンを再び enableにする
-       }
-   });
-}
-
-let parse_info_file = function(){
-  if (this.files[0].type == 'text/plain'){
-    var reader = new FileReader()
-    reader.readAsText(this.files[0], 'UTF-8')
-    reader.onload = function(){
-      var txt = reader.result
-      var access_key_pattern = /Access\sKey:\s(\S+)\n/
-      access_key = txt.match(access_key_pattern)
-      $('#access_key').val(access_key[1])
-
-      var secret_key_pattern = /Secret\sKey:\s(\S+)\n/
-      secret_key = txt.match(secret_key_pattern)
-      $('#secret_key').val(secret_key[1])
-    }
-  }
+  $('#object_table').DataTable({
+    "ajax": '/api/v1/dummy/',
+    'columnDefs': [{
+        'targets': 0,
+        'searchable': false,
+        'orderable': false,
+        'className': 'dt-body-center',
+        'render': function (data, type, full, meta){
+            return '<input type="checkbox" name="r_chk" value="' + data + '">';
+        }
+     }],
+    'order': [[1, 'asc']]
+  })
 }

@@ -4,6 +4,7 @@ import re
 import shutil
 import time
 import uuid
+import random
 from flask import Flask, jsonify, request, make_response,send_from_directory
 import objects_highlevel
 
@@ -52,11 +53,14 @@ def bucket_list():
         response = make_response(json.dumps(status),500)
         return response
     
-@app.route('/api/v1/bucket/size/',methods=['GET'])
+@app.route('/api/v1/bucket/info/',methods=['GET'])
 def bucket_info():
-    status,size_list,num_list = OBJECT_BOTO3.bucket_info()
+    #status,size_list,num_list = OBJECT_BOTO3.bucket_info()
+    status,data = OBJECT_BOTO3.bucket_info()
     if status == True:
-        d = {'size':size_list,'num':num_list}
+        #d = {'size':size_list,'num':num_list}
+        d = {"data":data}
+        print(d)
         return jsonify(d),200
     else:
         response = make_response(json.dumps(status),500)
@@ -66,7 +70,9 @@ def bucket_info():
 def object_list(bucket_name):
     status,o_list = OBJECT_BOTO3.list_object(bucket_name)
     if status == True:
-        return jsonify(o_list),200
+        d = {"data":o_list}
+        #return jsonify(o_list),200
+        return jsonify(d),200
     else:
         response = make_response(json.dumps(status),500)
         return response
@@ -182,8 +188,12 @@ def download_file(bucket_name,file_name):
         os.mkdir(save_dir_path)
     
     if request.method == 'PUT':
-        OBJECT_BOTO3.download_file(bucket_name,file_name,filepath,uuid)
-        return (jsonify({}),200)
+        status = OBJECT_BOTO3.download_file(bucket_name,file_name,filepath,uuid)
+        if status == True:
+            return jsonify({}),200
+        else:
+            response = make_response(json.dumps(status),500)
+            return response
     if request.method == 'GET':
         i = 0
         while i<=10:
@@ -213,12 +223,26 @@ def download_status(bucket_name,file_name):
     p = OBJECT_BOTO3.per[uuid]['p']
     return (jsonify({'progress':p}),200)
  
-    
-
 @app.route('/api/v1/bucket/object/delete/<bucket_name>/<file_name>',methods=['POST'])
 def delete_file(bucket_name,file_name):
     result = OBJECT_BOTO3.delete_file(bucket_name,file_name)
     return jsonify(result)
+
+@app.route('/api/v1/dummy/',methods=['GET'])
+def dummy():
+    d = []
+    
+    data = {"data":d}
+    return jsonify(data),200
+
+@app.route('/api/v1/test/',methods=['GET'])
+def test():
+    data = []
+    num = random.randint(1,20)
+    for i in range(int(num)):
+        data.append([i,2*i,3*i,10*i])
+    print({"data":data})
+    return jsonify({"data":data})
 
 #
 # util

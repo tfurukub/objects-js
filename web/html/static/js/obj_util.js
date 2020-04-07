@@ -172,5 +172,36 @@ let removeLoading = function(){
     $("#loading").remove();
   }
 let test = function(){
-    $('#object_list_wrapper').show()
+    var data = {"data":[[1,"a",5,10],[1,"b",15,30],[1,"c",5,20]]}
+    //var data1 = [[1,"a",5,10],[1,"b",15,30],[1,"c",5,20]]
+    $('#bucket_table').DataTable({
+        "ajax": '/api/v1/test/',
+        'columnDefs': [{
+            'targets': 0,
+            'searchable': false,
+            'orderable': false,
+            'className': 'dt-body-center',
+            'render': function (data, type, full, meta){
+                return '<input type="checkbox" name="r_chk" value="' + $('<div/>').text(data).html() + '">';
+            }
+         },
+         {
+          'targets': 1,
+          //'searchable': false,
+          //'orderable': false,
+          //'className': 'dt-body-center',
+          'render': function (data, type, full, meta){
+            console.log(data)
+              return '<a href=\"javascript:bucket_clicked(\''+data+'\')\">'+data+'</a>'
+          }
+       }
+        ],
+        'order': [[1, 'asc']]
+      })
+    $('#bucket_list_wrapper').show()
+}
+
+let test1 = function(){
+    var data = [[1,"a",5,10],[1,"b",15,30],[1,"c",5,20],[1,"d",5,20]]
+    $('#object_table').DataTable().ajax.reload()
 }

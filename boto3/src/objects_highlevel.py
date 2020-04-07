@@ -116,6 +116,7 @@ class Objects_boto3():
         status,bucket_list = self.list_bucket()
         size_list = {}
         num_list = {}
+        d = []
         try:
             for bucket_name in bucket_list:
                 bucket = self.s3resource.Bucket(bucket_name)
@@ -124,24 +125,29 @@ class Objects_boto3():
                 for obj in bucket.objects.all():
                     size += obj.size
                     num += 1
-                size_list[bucket_name] = size
-                num_list[bucket_name] = num
+                #size_list[bucket_name] = size
+                #num_list[bucket_name] = num
+                f_size,power_label = self.format_bytes(size)
+                d.append([bucket_name,bucket_name,str(f_size)+' '+power_label,num])
         except Exception as e:
             print('other error',e)
             status = {'Error':{'Message':str(e)}}
             return status,'',''
         else:
             status = True
-            print(size_list)
-            return status,size_list,num_list
+            #return status,size_list,num_list
+            return status,d
 
     def list_object(self,bucket_name):
         #s3resource = self.boto3_session()
-        object_list = {}
+        #object_list = {}
+        object_list = []
         try:
             bucket = self.s3resource.Bucket(bucket_name)
             for obj in bucket.objects.all():
-                object_list[obj.key] = obj.size
+                #object_list[obj.key] = obj.size
+                size,power_label = self.format_bytes(obj.size)
+                object_list.append([obj.key,obj.key,str(size)+' '+power_label])
         except Exception as e:
             print('other error',e)
             status = {'Error':{'Message':str(e)}}
@@ -166,9 +172,16 @@ class Objects_boto3():
         local_file = filepath
         remote_file = file_name
         
-        file_size = self.s3resource.Object(bucket_name,remote_file).content_length
-        result = self.s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file,uuid,self.per))
-        return result
+        
+        try:
+            file_size = self.s3resource.Object(bucket_name,remote_file).content_length
+            self.s3resource.Bucket(bucket_name).download_file(remote_file,local_file,Callback=ProgressPercentage(file_size,remote_file,uuid,self.per))
+        except botocore.exceptions.ClientError as e:
+            print('Unexpected Error: %s' % e.response)
+            status = e.response
+            return status
+        else:            
+            return True
 
     def delete_file(self,bucket_name,file_name):
         result = self.s3resource.Object(bucket_name,file_name).delete()
@@ -180,3 +193,13 @@ class Objects_boto3():
         self.endpoint = endpoint
         self.session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
         self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint)
+
+    def format_bytes(self,size):
+        # 2**10 = 1024
+        power = 1024
+        n = 0
+        power_labels = {0 : 'B', 1: 'KiB', 2: 'MiB', 3: 'GiB', 4: 'TiB'}
+        while size > power:
+            size /= power
+            n += 1
+        return round(size,2), power_labels[n]
