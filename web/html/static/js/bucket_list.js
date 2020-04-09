@@ -277,13 +277,14 @@ let delete_files = function(){
 
 let bucket_list_updated = function(){
   $('#bucket_table').DataTable().ajax.reload()
+  $('#object_table').DataTable().columns.adjust()
 }
 
 let back_to_bucket_list = function(){
   $('#object_list_wrapper').hide()
   $('#bucket_table').DataTable().ajax.reload()
   $('#bucket_list_wrapper').show()
-  
+  $('#bucket_table').DataTable().columns.adjust()
 }
 
 let bucket_clicked = function(bucket_name){
@@ -292,6 +293,7 @@ let bucket_clicked = function(bucket_name){
     $('#object_list_wrapper').val(bucket_name)
     $('#bucket_list_wrapper').hide()
     $('#object_list_wrapper').show()
+    $('#object_table').DataTable().columns.adjust()
   })
 }
 
@@ -318,6 +320,7 @@ let connect_objects = function(){
       $('#bucket_table').DataTable().ajax.url('/api/v1/bucket/info/')
       $('#bucket_table').DataTable().ajax.reload(function(){
         $('#bucket_list_wrapper').show()
+        $('#bucket_table').DataTable().columns.adjust()
       })
     }, 
     error:function(j,status){
@@ -332,6 +335,7 @@ let Initialize_datatables = function(){
     "ajax": '/api/v1/dummy/',
     'columnDefs': [{
         'targets': 0,
+        'width': '10px',
         'searchable': false,
         'orderable': false,
         'className': 'dt-body-center',
@@ -357,13 +361,19 @@ let Initialize_datatables = function(){
     "ajax": '/api/v1/dummy/',
     'columnDefs': [{
         'targets': 0,
+        'width': '10px',
         'searchable': false,
         'orderable': false,
         'className': 'dt-body-center',
         'render': function (data, type, full, meta){
             return '<input type="checkbox" name="r_chk" value="' + data + '">';
         }
-     }],
+     },
+      {
+        'targets': 2,
+        'type': 'file-size'
+      }
+    ],
     'order': [[1, 'asc']]
   })
 }

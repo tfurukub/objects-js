@@ -172,33 +172,13 @@ let removeLoading = function(){
     $("#loading").remove();
   }
 let test = function(){
-    var data = {"data":[[1,"a",5,10],[1,"b",15,30],[1,"c",5,20]]}
-    //var data1 = [[1,"a",5,10],[1,"b",15,30],[1,"c",5,20]]
-    $('#bucket_table').DataTable({
-        "ajax": '/api/v1/test/',
-        'columnDefs': [{
-            'targets': 0,
-            'searchable': false,
-            'orderable': false,
-            'className': 'dt-body-center',
-            'render': function (data, type, full, meta){
-                return '<input type="checkbox" name="r_chk" value="' + $('<div/>').text(data).html() + '">';
-            }
-         },
-         {
-          'targets': 1,
-          //'searchable': false,
-          //'orderable': false,
-          //'className': 'dt-body-center',
-          'render': function (data, type, full, meta){
-            console.log(data)
-              return '<a href=\"javascript:bucket_clicked(\''+data+'\')\">'+data+'</a>'
-          }
-       }
-        ],
-        'order': [[1, 'asc']]
-      })
-    $('#bucket_list_wrapper').show()
+    $.ajax({type:'get',url:'/api/v1/test/',
+        success:function(j){
+            date = new Date()
+            console.log(parseInt(date.getTime()/1000).toFixed(0))
+            console.log(j)
+        }
+    })
 }
 
 let test1 = function(){

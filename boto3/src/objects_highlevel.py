@@ -156,6 +156,24 @@ class Objects_boto3():
             status = True
             return status,object_list
 
+    def get_object_info(self):
+        d = {}
+        try:
+            status, bucket_list = self.list_bucket()
+            for bucket_name in bucket_list:
+                bucket = self.s3resource.Bucket(bucket_name)
+                d[bucket_name] = []
+                for obj in bucket.objects.all():
+                    size,power_label = self.format_bytes(obj.size)
+                    d[bucket_name].append([obj.key,str(size)+' '+power_label,obj.last_modified.timestamp()])
+        except Exception as e:
+            print('other error',e)
+            status = {'Error':{'Message':str(e)}}
+            return status,''
+        else:
+            status = True
+            return status,d
+
     def upload_file(self,bucket_name,file_name,filepath,uuid):
         #s3resource = self.boto3_session()
         local_file = filepath

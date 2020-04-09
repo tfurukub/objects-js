@@ -237,12 +237,9 @@ def dummy():
 
 @app.route('/api/v1/test/',methods=['GET'])
 def test():
-    data = []
-    num = random.randint(1,20)
-    for i in range(int(num)):
-        data.append([i,2*i,3*i,10*i])
-    print({"data":data})
-    return jsonify({"data":data})
+    status,d = OBJECT_BOTO3.get_object_info()
+    print(d)
+    return jsonify(d),200
 
 #
 # util
