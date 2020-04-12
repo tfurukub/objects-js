@@ -50,26 +50,14 @@ class Objects_boto3():
         self.session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
         self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint,region_name='us-east-1')
         self.s3client = self.s3resource.meta.client
-    '''
-    def boto3_session(self):
-        #boto3.set_stream_logger()
-        #botocore.session.Session().set_debug_logger()
-        try:
-            session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-            s3resource = session.resource('s3',endpoint_url=self.endpoint)
-        except ClientError as e:
-            print('###############Exception#################',e)
-            return e
-        else:            
-            return s3resource
-    '''
-    def init_upload(self,bucket_name,uuid,file_name):
-        
-        self.per[uuid] = {'file_name':file_name,'p':0}
-        print(self.per[uuid])
-        self.parts[uuid] = []
-        self.mpu_id[uuid] = self.s3client.create_multipart_upload(Bucket=bucket_name, Key=file_name)
-        print('mpu_id=',self.mpu_id[uuid]['UploadId'],' ',file_name)
+
+    def init_env(self,bucket_name,uuid,file_name,op):
+        if op == 'download':
+            self.per[uuid] = {'file_name':file_name,'p':0}
+        if op == 'upload':
+            self.parts[uuid] = []
+            self.mpu_id[uuid] = self.s3client.create_multipart_upload(Bucket=bucket_name, Key=file_name)
+            #print('mpu_id=',self.mpu_id[uuid]['UploadId'],' ',file_name)
     
     def init_test(self):
         print(self.s3client.list_buckets())
@@ -152,15 +140,13 @@ class Objects_boto3():
             return status,d
 
     def list_object(self,bucket_name):
-        #s3resource = self.boto3_session()
-        #object_list = {}
         object_list = []
         try:
             bucket = self.s3resource.Bucket(bucket_name)
             for obj in bucket.objects.all():
                 #object_list[obj.key] = obj.size
                 size,power_label = self.format_bytes(obj.size)
-                object_list.append([obj.key,obj.key,str(size)+' '+power_label])
+                object_list.append([obj.key,obj.key,str(size)+' '+power_label,obj.last_modified.timestamp()])
         except Exception as e:
             print('other error',e)
             status = {'Error':{'Message':str(e)}}
@@ -187,17 +173,6 @@ class Objects_boto3():
             status = True
             return status,d
 
-    def upload_file(self,bucket_name,file_name,filepath,uuid):
-        #s3resource = self.boto3_session()
-        local_file = filepath
-        file_size = os.path.getsize(local_file)
-        if os.path.exists(local_file):
-            print('started sending file to Objects')
-            self.s3resource.Bucket(bucket_name).upload_file(local_file,file_name,Callback=ProgressPercentage(file_size,file_name,uuid,self.per))
-            return True
-        else:
-            return('No File Exist. Can not upload')
-
     def multi_upload(self,bucket_name,file_name,filepath,uuid,i):
         #print('multi_upload ',filepath,' ',i)
         with open(filepath,'rb') as f:
@@ -210,7 +185,7 @@ class Objects_boto3():
     
     def complete(self,bucket_name,file_name,uuid):
         self.parts[uuid].sort(key=lambda x: x['PartNumber'])
-        print('complete ',file_name,' ',self.parts[uuid])
+        #print('complete ',file_name,' ',self.parts[uuid])
         result = self.s3client.complete_multipart_upload(
         Bucket=bucket_name,
         Key=file_name,

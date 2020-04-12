@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <title>Object Viewer</title>
     <link  href="/static/favicon.ico" rel="icon" type="image/vnd.microsoft.icon">
-
     <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
     <link  href="/static/css/jquery-ui.css" rel="stylesheet" >
     <link  href="/static/css/modal.css" rel="stylesheet" >
     <link  href="/static/css/loading.css" rel="stylesheet" >
-    
     <link href="/static/css/datatables.min.css" rel="stylesheet">
-    
     <script src="/static/js/jquery-2.2.4.min.js"></script>
     <script src="/static/js/jquery-3.3.1.js"></script>
     <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
@@ -19,6 +16,7 @@
     <script src="/static/js/jquery-ui.min.js"></script>
     <script src="/static/js/datatables.min.js"></script>
     <script src="/static/js/file-size.js"></script>
+    <script src="/static/js/moment-with-locales.js"></script>
     <script src="/static/js/bucket_list.js"></script>
     <script src="/static/js/obj_util.js"></script>
   </head>
@@ -27,7 +25,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h4 class="modal-title">Progress</h4>
-          <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
+          <button id="close_modal" type="button" class="close" data-dismiss="modal"><span>×</span></button>
         </div>
         <div class="modal-body">
           <body id="body_id">
@@ -89,7 +87,7 @@
       <button id="create_bucket_button" class="btn btn-outline-primary">CREATE BUCKET</button>
       <button id="delete_bucket_button" class="btn btn-outline-primary">DELETE BUCKET</button>
       <hr>
-      <table id="bucket_table" class="table table-striped table-bordered" style="width:100%">
+      <table id="bucket_table" class="table" style="width:100%">
         <thead>
         <tr>
           <th></th>
@@ -114,13 +112,15 @@
       </label>
       <button id="delete_files" value="DELETE_FILE" class="btn btn-outline-primary">DELETE FILE</button>
       <button id="download_files" value="DOWNLOAD_FILE" class="btn btn-outline-primary">DOWNLOAD_FILE</button>
+      <button id="reload_object_list" value="RELOAD" class="btn btn-outline-primary">RELOAD</button>
       <hr>
-      <table id="object_table" class="table table-striped table-bordered" style="width:100%">
+      <table id="object_table" class="table" style="width:100%">
         <thead>
         <tr>
           <th><input type="checkbox" id="all_checks"></th>
           <th>Key</th>
           <th>Size</th>
+          <th>Last Modified</th>
         </tr>
         </thead>
         <tbody id="object_list">
@@ -143,6 +143,7 @@
   $('#create_prb').click(test)
   $('#connect_objects').click(connect_objects)
   $('#create_bucket_text_input').click(input_bucket_name)
+  $('#reload_object_list').click(object_list_updated_wrapper)
   $('#test').click(test)
   $('#test1').click(test1)
 

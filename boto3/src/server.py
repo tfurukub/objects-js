@@ -108,11 +108,10 @@ def buckets(bucket_name):
 
 
 @app.route('/api/v1/init/<bucket_name>/<file_name>/<uuid>/<op>/',methods=['PUT'])
-def init_upload(bucket_name,uuid,file_name,op):
-    print('init_upload called')
-    OBJECT_BOTO3.init_upload(bucket_name,uuid,file_name)
+def init_env(bucket_name,uuid,file_name,op):
+    OBJECT_BOTO3.init_env(bucket_name,uuid,file_name,op)
 
-    if uuid in OBJECT_BOTO3.per:
+    if uuid in OBJECT_BOTO3.per or uuid in OBJECT_BOTO3.mpu_id:
         if op == 'download':
             save_dir_path = os.path.join(DOWNLOAD_SAVE_DIR,uuid)
         elif op == 'upload':
@@ -125,24 +124,8 @@ def init_upload(bucket_name,uuid,file_name,op):
         return (jsonify({'uuid':uuid,'file_name':file_name}),200)
     else:
         return (jsonify({'error':'failed to initialize'}),500)
-'''
-@app.route('/api/v1/bucket/object/upload/<bucket_name>/<file_name>',methods=['POST','DELETE'])
-def upload_file(bucket_name,file_name):
-    uuid = request.args.get('uuid')  
-    save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
-    if request.method == 'POST':
-        if os.path.isdir(save_dir_path) == False:
-            return jsonify({}),500
-        file = request.files[file_name]
-        file_name = request.args.get('index')+'_'+file_name
-        file.save(os.path.join(save_dir_path,file_name))
-        return jsonify({'uuid':uuid}),200
-    if request.method == 'DELETE':
-        shutil.rmtree(save_dir_path)
-        OBJECT_BOTO3.delete_percentage(uuid)
-        return jsonify({}),200
-'''
-@app.route('/api/v1/bucket/object/upload/',methods=['POST','DELETE'])
+
+@app.route('/api/v1/bucket/object/upload/',methods=['POST'])
 def multi_upload_file():
     
     uuid = request.form['uuid']
@@ -162,82 +145,13 @@ def multi_upload_file():
         file.save(os.path.join(save_dir_path,file_name_num))
         size = os.stat(filepath).st_size
         OBJECT_BOTO3.multi_upload(bucket_name,file_name,filepath,uuid,index)
-        OBJECT_BOTO3.per[uuid]['p'] += 1
+
         if len(OBJECT_BOTO3.parts[uuid]) == int(chunk_number):
             result = OBJECT_BOTO3.complete(bucket_name,file_name,uuid)
             shutil.rmtree(save_dir_path)
             #print('complete result = ',result)
             return jsonify(result),200
         return jsonify({'uuid':uuid,'index':index,'size':size,'file_name':file_name,'from':'server'}),200
-
-    if request.method == 'DELETE':
-        shutil.rmtree(save_dir_path)
-        OBJECT_BOTO3.delete_percentage(uuid)
-        return jsonify({}),200
-
-@app.route('/api/v1/bucket/object/upload/status/<bucket_name>/<file_name>',methods=['GET'])
-def upload_status(bucket_name,file_name):
-    chunk_number = request.args.get('chunk_num')
-    uuid = request.args.get('uuid')
-    p = int(OBJECT_BOTO3.per[uuid]['p'])/int(chunk_number)
-    print('p=',OBJECT_BOTO3.per[uuid]['p'],'chunk=',chunk_number)
-    return jsonify({'p':p}),200
-'''
-@app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['GET','POST'])
-def concat_file(bucket_name,file_name):
-    uuid = request.args.get('uuid')
-    save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
-    files = os.listdir(save_dir_path)
-    filepath = os.path.join(save_dir_path,file_name)
-    
-    if request.method == 'POST':
-        chunk_number = int(request.args.get('num'))
-        files_ordered = []
-        for i in range(chunk_number):
-            sliced_filename = str(i)+'_'+file_name
-            if sliced_filename in files:
-                files_ordered.append(sliced_filename)
-            else:
-                for item in files_ordered:
-                    os.remove(os.path.join(save_dir_path,item))
-                return jsonify({'error':'Files not sent correctly'})
-        
-        with open(filepath,'wb') as savefile:
-            for i in range(chunk_number):
-                data = open(os.path.join(save_dir_path,files_ordered[i]),'rb').read()
-                savefile.write(data)
-                savefile.flush()
-        result = OBJECT_BOTO3.upload_file(bucket_name,file_name,filepath,uuid)
-        return jsonify({}),200
-
-    if request.method == 'GET':
-        concat_size = 0
-        p = OBJECT_BOTO3.per[uuid]['p']
-        if os.path.isfile(filepath):
-            concat_size = os.path.getsize(filepath)
-            print(file_name,' ',concat_size)
-
-        if p == 100:
-            return(jsonify({'concat_size':concat_size,'s3_progress':p,'uuid':uuid}),200)
-        return jsonify({'concat_size':concat_size,'s3_progress':p,'uuid':uuid}),200
-'''
-
-@app.route('/api/v1/bucket/object/concat/<bucket_name>/<file_name>',methods=['GET','POST'])
-def concat_file(bucket_name,file_name):
-    uuid = request.args.get('uuid')
-    save_dir_path = os.path.join(UPLOAD_SAVE_DIR,uuid)
-    files = os.listdir(save_dir_path)
-    filepath = os.path.join(save_dir_path,file_name)
-    
-    if request.method == 'POST':
-        result = OBJECT_BOTO3.complete(bucket_name,file_name,uuid)
-        return jsonify({}),200
-
-    if request.method == 'GET':
-        p = OBJECT_BOTO3.per[uuid]['p']
-        if p == 100:
-            return(jsonify({'s3_progress':p,'uuid':uuid}),200)
-        return jsonify({'s3_progress':p,'uuid':uuid}),200
 
 @app.route('/api/v1/bucket/object/download/<bucket_name>/<file_name>',methods=['PUT','GET','DELETE'])
 def download_file(bucket_name,file_name):

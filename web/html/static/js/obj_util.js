@@ -23,59 +23,10 @@ let pgb_initialize = function(files){
         $('#progress_bar').append(val_pgb)
     })
 }
-/*
-let pgb_initialize = function(files){
-    tag_txt = {}
-    style_txt = {}
-    num = files.length
-    for(i=0;i<num;i++){
-        file_name = files[i].name
-        file_order[file_name] = i
-        tag_txt[file_name] = '<p>'+file_name+'</p><div id=\"pgb_'+String(i)+'\">'+'<div id=\"lbl_'+String(i)+'\"></div>'+'</div>'
-        style_txt[file_name] = '<style type=\"text/css\">#lbl_'+String(i)+'{position: absolute;left: 50%;}</style>'
-    }
-    
-    
-    
-    Object.keys(tag_txt).forEach(function(key) {
-        var val_pgb = this[key]; // this は obj
-        var val_body = style_txt[key]
-        $('#progress_bar').append(val_pgb)
-        $('#body_id').append(val_body)
-        pgb_tag = '#pgb_'+file_order[key]
-        lbl_tag = '#lbl_'+file_order[key]
 
-        $(pgb_tag).progressbar({
-            value: 0,
-            max:100,
-            change: function(){
-                    lbl_tag = pgb_tag.replace(/pgb/,'lbl')
-                    var v = $(pgb_tag).progressbar("value");
-                    var txt = $(lbl_tag).text()
-                    var pattern = /^(\d+)\%/
-                    current_v = txt.match(pattern)
-                    
-                    if(current_v != null){
-                        if(v >= current_v[1]){
-                            $(lbl_tag).text(v + "%");
-                        }
-                    }else{
-                        $(lbl_tag).text(v + "%")
-                    }
-                },
-                complete: function(){
-                    lbl_tag = pgb_tag.replace(/pgb/,'lbl')
-                    $(lbl_tag).text("Completed");
-                    console.log(key,' Completed')
-                }
-            })
-        }, tag_txt)         
-    
-}
-*/
 let pgb_update = function(p1,file_name){
     pgb_tag = '#pgb_'+file_order[file_name]
-    console.log('in pgb_update',p1,file_name)
+    //console.log('in pgb_update',p1,file_name)
     $(pgb_tag).css('width',String(p1)+'%')
     $(pgb_tag).attr('aria-valuenow',String(p1))
     $(pgb_tag).text(String(p1)+'%')
@@ -85,7 +36,7 @@ let progress_window = function(){
 }
 
 let all_select = function(){
-    $('input[name=r_chk]').prop('checked',this.checked)
+    $('input[name=o_chk]').prop('checked',this.checked)
 }
   
 let ind_select = function(){
@@ -171,12 +122,16 @@ let dispLoading = function(msg){
 let removeLoading = function(){
     $("#loading").remove();
   }
-let test = function(){
-    $.ajax({type:'get',url:'/api/v1/test/',
-        success:function(j){
 
-        }
-    })
+let EpochToDate = function(epoch) {
+    if (epoch < 10000000000)
+        epoch *= 1000; // convert to milliseconds (Epoch is usually expressed in seconds, but Javascript uses Milliseconds)
+    var epoch = epoch + (new Date().getTimezoneOffset() * -1); //for timeZone        
+    return new Date(epoch);
+}
+
+let test = function(){
+    alert("Epoch to Date:" + EpochToDate(1586679496));
 }
 
 let test1 = function(){
