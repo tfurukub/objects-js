@@ -42,12 +42,12 @@ let upload_files = function(){
   pgb_initialize(files)
   open_modal(files.length)
   var d = {}
-  sent_bytes = {}
+  // Loup for each file
   for(k=0;k<files.length;k++){
     var file_name = files[k].name
     var file_size = files[k].size
     var file = files[k]
-    var chunk_size = 1024*1024*1000
+    var chunk_size = 5*1024*1024
     var chunk_number = Math.ceil(file.size/chunk_size)
     var slice_index = 0
     var uuid = generateUuid()
@@ -59,58 +59,26 @@ let upload_files = function(){
     d1['chunk_number'] = chunk_number
     d1['slice_index'] = slice_index
     d1['num'] = k
-    d1['bucket'] = selected_bucket
+    d1['bucket_name'] = selected_bucket
     d1['uuid'] = uuid
     d1['sent_bytes'] = {}
     d[uuid] = d1
 
-    num_sent[file_name] = 0
-    url_option = file_name + '/' + uuid + '/upload/'
-    sent_bytes[file_name] = {}
+    // Initialize Upload
+    url_option = selected_bucket + '/' + file_name + '/' + uuid + '/upload/'
 
     $.ajax({type:'put',url:'/api/v1/init/'+url_option,
       success:function(j){
-        uuid_l = j['uuid']
+        // Start Upload after initialization
         d2 = d[j['uuid']]
-
+        d2['progress'] = 0
+        // Loup for each chunk
         for(i=0;i<d2['chunk_number'];i++){
           file_part = files[d2['num']].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
           d2['files'] = file_part
           d2['index'] = i
           d2['sent_bytes'][i] = 0
-
-          worker = new Worker('/static/js/worker.js')
-          worker.addEventListener('message', function(e) {
-            if(e.data['status'] == 'complete'){
-              num_sent[e.data['file_name']] += 1
-              p_1 = parseInt((num_sent[e.data['file_name']]/e.data['chunk_number']*100/2).toFixed(0))              
-              if(num_sent[e.data['file_name']] == e.data['chunk_number']){
-                console.log(e.data['file_name'])
-                url_option = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
-                $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
-                  success: function(){
-                    bucket_clicked(e.data['bucket'])
-                  }
-                })
-                check_chunk_status(e.data['bucket'],e.data['file_name'],e.data['chunk_number'],e.data['file_size'],p_1,e.data['uuid'])
-              }
-            }else{
-              d2['sent_bytes'][e.data['index']] = e.data['p']
-              obj = d2['sent_bytes']
-              p = 0
-              Object.keys(obj).forEach(function(key){
-                p += obj[key]                
-              })
-              p_1 = parseInt(p/e.data['file_size']*100/2).toFixed(0)
-              if(p_1 > 50){
-                p_1 = 50
-              }
-              pgb_update(p_1,e.data['file_name'])
-              //console.log(e.data['file_name'],d2['sent_bytes'])
-            }
-            
-          }, false)
-          worker.postMessage(d2)
+          upload_threading(d2)
           d2['slice_index'] += d2['chunk_size']
         }
       },
@@ -120,6 +88,39 @@ let upload_files = function(){
       }
     })
   }
+}
+
+let upload_threading = function(d2){
+  var worker = new Worker('/static/js/worker.js')
+    worker.addEventListener('message', function(e) {
+      if(e.data.ETag){
+        pgb_update(100,e.data.Key)
+        bucket_clicked(d2['bucket_name'])
+        //console.log('finished',e.data)
+      }else{
+        d2['sent_bytes'][e.data.index] = e.data.size
+        console.log(d2['sent_bytes'],d2['file_name'])
+        total_bytes = 0
+        obj = d2['sent_bytes']
+        Object.keys(obj).forEach(function(key){
+          total_bytes += obj[key]                
+        })
+        p = parseInt(total_bytes/d2['file_size']*100).toFixed(0)
+        pgb_update(p,e.data.file_name)
+        //console.log(e.data)
+      }
+    }, false)
+    worker.postMessage(d2)
+}
+
+let check_upload_status = function(d){
+  $.ajax({type:'get',url:'/api/v1/test/',
+        success:function(j){
+          //console.log(d)
+          check_upload_status(d)
+        }
+    })
+  
 }
 
 let download_files = function(){
@@ -152,7 +153,7 @@ let download_files_continue = function(){
     f = $(this).val()
     uuid = generateUuid()
     uuid_list[f] = uuid
-    url_option = f + '/' + uuid + '/download/'
+    url_option = selected_bucket + '/' + f + '/' + uuid + '/download/'
     $.ajax({type:'put',url:'/api/v1/init/'+url_option,
       success:function(j){
         url_option = selected_bucket+'/'+ j['file_name'] + '?uuid='+j['uuid']
@@ -221,10 +222,10 @@ let check_chunk_status= function(selected_bucket,file_name,chunk_number,file_siz
     $.ajax({type:'get',url:'/api/v1/bucket/object/concat/'+url_option,
       success: function(j){
         
-        p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
-        p_3 = parseInt((j['s3_progress']/4).toFixed(0))
+        //p_2 = parseInt((j['concat_size']/file_size*100/4).toFixed(0))
+        p_3 = parseInt((j['s3_progress']/2).toFixed(0))
         
-        pgb_update(p_1+p_2+p_3,file_name)
+        pgb_update(p_1+p_3,file_name)
         //console.log(p_1,p_2,p_3,file_name)
         if(j['s3_progress'] == String(100)){
         
@@ -377,3 +378,111 @@ let Initialize_datatables = function(){
     'order': [[1, 'asc']]
   })
 }
+
+/*
+let upload_files = function(){
+  files = this.files
+  pgb_initialize(files)
+  open_modal(files.length)
+  var d = {}
+  sent_bytes = {}
+  for(k=0;k<files.length;k++){
+    var file_name = files[k].name
+    var file_size = files[k].size
+    var file = files[k]
+    var chunk_size = 5*1024*1024
+    var chunk_number = Math.ceil(file.size/chunk_size)
+    var slice_index = 0
+    var uuid = generateUuid()
+    var selected_bucket = $('#object_list_wrapper').val()
+    d1 = {}
+    d1['file_name'] = file_name
+    d1['file_size'] = file_size
+    d1['chunk_size'] = chunk_size
+    d1['chunk_number'] = chunk_number
+    d1['slice_index'] = slice_index
+    d1['num'] = k
+    d1['bucket'] = selected_bucket
+    d1['uuid'] = uuid
+    d1['sent_bytes'] = {}
+    d[uuid] = d1
+
+    num_sent[file_name] = 0
+    url_option = selected_bucket + '/' + file_name + '/' + uuid + '/upload/'
+    sent_bytes[file_name] = {}
+
+    $.ajax({type:'put',url:'/api/v1/init/'+url_option,
+      success:function(j){
+        uuid_l = j['uuid']
+        d2 = d[j['uuid']]
+for(i=0;i<d2['chunk_number'];i++){
+          file_part = files[d2['num']].slice(d2['slice_index'],d2['slice_index']+d2['chunk_size'])
+          d2['files'] = file_part
+          d2['index'] = i
+          d2['sent_bytes'][i] = 0
+          d2['p_1'] = 0
+          d2['p_2'] = 0
+          worker = new Worker('/static/js/worker.js')
+          worker.addEventListener('message', function(e) {
+            if(e.data['status'] == 'complete'){
+              num_sent[e.data['file_name']] += 1
+              //p_1 = parseInt((num_sent[e.data['file_name']]/e.data['chunk_number']*100/2).toFixed(0))
+              url_option = e.data['bucket'] + '/' + e.data['file_name'] + '?chunk_num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
+              $.ajax({type:'get',url:'/api/v1/bucket/object/upload/status/'+url_option,
+                  success: function(j){
+                    d2['p_2'] = parseInt((j['p']*100/2).toFixed(0))
+                    //console.log('a',parseInt(d2['p_1']),parseInt(d2['p_2']))
+                    pgb_update(parseInt(d2['p_1'])+parseInt(d2['p_2']),e.data['file_name'])
+                  }
+              })
+              if(num_sent[e.data['file_name']] == e.data['chunk_number']){
+                console.log(e.data['file_name'])
+                //url_option = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
+                d2['url_option'] = e.data['bucket']+'/'+e.data['file_name']+'?num='+e.data['chunk_number']+'&uuid='+e.data['uuid']
+                worker2 = new Worker('/static/js/worker2.js')
+                worker2.addEventListener('message',function(e){
+                  if(e.data['status'] == 'complete'){
+                    console.log('concat started ',e.data['file_name'])
+                    bucket_clicked(e.data['bucket'])
+                  }
+                },false)
+                worker2.postMessage(d2)
+                $.ajax({type:'post',url:'/api/v1/bucket/object/concat/'+url_option,
+                  success: function(){
+                    bucket_clicked(e.data['bucket'])
+                  }
+                })
+                //check_chunk_status(e.data['bucket'],e.data['file_name'],e.data['chunk_number'],e.data['file_size'],p_1,e.data['uuid'])
+              }
+            }else{
+              d2['sent_bytes'][e.data['index']] = e.data['p']
+              obj = d2['sent_bytes']
+              p = 0
+              Object.keys(obj).forEach(function(key){
+                p += obj[key]                
+              })
+              d2['p_1'] = parseInt(p/e.data['file_size']*100/2).toFixed(0)
+              if(d2['p_1'] > 50){
+                d2['p_1'] = 50
+              }
+              console.log('b',parseInt(d2['p_1']),parseInt(d2['p_2']))
+              console.log(d)
+              pgb_update(parseInt(d2['p_1'])+parseInt(d2['p_2']),e.data['file_name'])
+              //console.log(e.data['file_name'],d2['sent_bytes'])
+            }
+            
+          }, false)
+          worker.postMessage(d2)
+          d2['slice_index'] += d2['chunk_size']
+        }
+      },
+      error:function(j){
+        console.log(j)
+        alert('Failed to Initialize')
+      }
+        
+    })
+  }
+  check_upload_status(d)
+}
+*/

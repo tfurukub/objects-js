@@ -73,12 +73,12 @@ let pgb_initialize = function(files){
     
 }
 */
-let pgb_update = function(p,file_name){
+let pgb_update = function(p1,file_name){
     pgb_tag = '#pgb_'+file_order[file_name]
-    //console.log('in pgb_update',p,file_name)
-    $(pgb_tag).css('width',String(p)+'%')
-    $(pgb_tag).attr('aria-valuenow',String(p))
-    $(pgb_tag).text(String(p)+'%')
+    console.log('in pgb_update',p1,file_name)
+    $(pgb_tag).css('width',String(p1)+'%')
+    $(pgb_tag).attr('aria-valuenow',String(p1))
+    $(pgb_tag).text(String(p1)+'%')
 }
 let progress_window = function(){
     child = window.open('progress.html','_blank','width=500,height=500,scrollbars=1,location=0,menubar=0,toolbar=0,status=1,directories=0,resizable=1,left='+(window.screen.width-500)/2+',top='+(window.screen.height-500)/2)
@@ -174,9 +174,7 @@ let removeLoading = function(){
 let test = function(){
     $.ajax({type:'get',url:'/api/v1/test/',
         success:function(j){
-            date = new Date()
-            console.log(parseInt(date.getTime()/1000).toFixed(0))
-            console.log(j)
+
         }
     })
 }

@@ -14,6 +14,7 @@ import botocore
 from botocore.exceptions import ClientError
 from boto3.s3.transfer import S3Transfer
 import datetime
+import boto3
 from boto3.session import Session
 import sys
 from urllib3.exceptions import NewConnectionError
@@ -42,9 +43,13 @@ class Objects_boto3():
         self.secretkey = secretkey
         self.endpoint = endpoint
         self.per = {}
+        self.mpu_id = {}
+        self.parts = {}
+        #boto3.set_stream_logger()
+        #botocore.session.Session().set_debug_logger()
         self.session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint)
-        self.client = self.session.client('s3',endpoint_url=self.endpoint)
+        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint,region_name='us-east-1')
+        self.s3client = self.s3resource.meta.client
     '''
     def boto3_session(self):
         #boto3.set_stream_logger()
@@ -58,8 +63,16 @@ class Objects_boto3():
         else:            
             return s3resource
     '''
-    def init_percentage(self,uuid,file_name):
+    def init_upload(self,bucket_name,uuid,file_name):
+        
         self.per[uuid] = {'file_name':file_name,'p':0}
+        print(self.per[uuid])
+        self.parts[uuid] = []
+        self.mpu_id[uuid] = self.s3client.create_multipart_upload(Bucket=bucket_name, Key=file_name)
+        print('mpu_id=',self.mpu_id[uuid]['UploadId'],' ',file_name)
+    
+    def init_test(self):
+        print(self.s3client.list_buckets())
 
     def delete_percentage(self,uuid):
         del self.per[uuid]
@@ -185,6 +198,26 @@ class Objects_boto3():
         else:
             return('No File Exist. Can not upload')
 
+    def multi_upload(self,bucket_name,file_name,filepath,uuid,i):
+        #print('multi_upload ',filepath,' ',i)
+        with open(filepath,'rb') as f:
+            data = f.read()
+            #print(filepath,' ',len(data))
+            part = self.s3client.upload_part(Body=data, Bucket=bucket_name, Key=file_name, UploadId=self.mpu_id[uuid]['UploadId'], PartNumber=int(i)+1)
+            self.parts[uuid].append({"PartNumber": int(i)+1, "ETag": part["ETag"]})
+            os.remove(filepath)
+        return ''
+    
+    def complete(self,bucket_name,file_name,uuid):
+        self.parts[uuid].sort(key=lambda x: x['PartNumber'])
+        print('complete ',file_name,' ',self.parts[uuid])
+        result = self.s3client.complete_multipart_upload(
+        Bucket=bucket_name,
+        Key=file_name,
+        UploadId=self.mpu_id[uuid]['UploadId'],
+        MultipartUpload={"Parts": self.parts[uuid]})
+        return result
+        
     def download_file(self,bucket_name,file_name,filepath,uuid):
         #s3resource = self.boto3_session()
         local_file = filepath
@@ -210,7 +243,8 @@ class Objects_boto3():
         self.secretkey = secretkey
         self.endpoint = endpoint
         self.session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint)
+        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint,region_name='us-east-1')
+        self.s3client = self.s3resource.meta.client
 
     def format_bytes(self,size):
         # 2**10 = 1024

@@ -1,33 +1,30 @@
 self.addEventListener('message',function(e){
-    d = e.data
-    file_name = d['file_name']
-    files = d['files']
-    uuid = d['uuid']
-    chunk_size = d['chunk_size']
-    i = d['index']
-    selected_bucket = d['bucket']
-    
-    var url = '/api/v1/bucket/object/upload/' + selected_bucket+'/'+file_name+'?index='+String(i)+'&chunk_size='+chunk_size + '&uuid='+uuid
+    d_worker = e.data
+    var url = '/api/v1/bucket/object/upload/'
     var xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Pragma', 'no-cache');
     xhr.setRequestHeader('Cache-Control', 'no-cache');
     xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00')
-    xhr.responseType = 'blob';
+    xhr.responseType = 'json';
     var formData = new FormData
-    formData.set(file_name,files)
+    formData.set(e.data['file_name'],e.data['files'])
+    formData.set('file_name',e.data['file_name'])
+    formData.set('uuid',e.data['uuid'])
+    formData.set('bucket_name',e.data['bucket_name'])
+    formData.set('chunk_number',e.data['chunk_number'])
+    formData.set('index',e.data['index'])
 
-    xhr.onreadystatechange = function (e) {
+    xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
-            d['status'] = 'complete'
-            self.postMessage(d)
+            self.postMessage(this.response)
+            self.close
         }
     }
 
     xhr.upload.onprogress = function (evt) {
-        //var load = (100*evt.loaded/evt.total|0)/2+50
-        d['p'] = evt.loaded
-        self.postMessage(d)
+        d_worker['size'] = evt.loaded
+        self.postMessage(d_worker)
     }
     xhr.send(formData)
 },false)
