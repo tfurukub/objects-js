@@ -131,7 +131,8 @@ let EpochToDate = function(epoch) {
 }
 
 let test = function(){
-    alert("Epoch to Date:" + EpochToDate(1586679496));
+    $('#size_chart').html("<svg></svg>")
+    $('#last_modified_chart').html("<svg></svg>")
 }
 
 let test1 = function(){

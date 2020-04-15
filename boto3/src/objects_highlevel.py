@@ -14,6 +14,7 @@ import botocore
 from botocore.exceptions import ClientError
 from boto3.s3.transfer import S3Transfer
 import datetime
+import time
 import boto3
 from boto3.session import Session
 import sys
@@ -157,20 +158,102 @@ class Objects_boto3():
 
     def get_object_info(self):
         d = {}
+        d_size = {}
+        d_size_num = {}
+        d_last = {}
+        d_last_num = {}
+        k = 1024
+        m = k*1024
+        g = m*1024
+        size_list = [m,m*10,m*100,g]
+        
+        hour = 60*60
+        day = hour*24
+        week = day*7
+        month = day*30
+        year = day*365
+        last_list = [hour,day,week,month]
+        now = int(time.time())
+        total_size = [0,0,0,0,0,0]
+        total_size_num = [0,0,0,0,0,0]
+        total_last = [0,0,0,0,0,0]
+        total_last_num = [0,0,0,0,0,0]
+
         try:
             status, bucket_list = self.list_bucket()
             for bucket_name in bucket_list:
                 bucket = self.s3resource.Bucket(bucket_name)
-                d[bucket_name] = []
+                d_size[bucket_name] = [0,0,0,0,0,0]
+                d_last[bucket_name] = [0,0,0,0,0,0]
+                d_size_num[bucket_name] = [0,0,0,0,0,0]
+                d_last_num[bucket_name] = [0,0,0,0,0,0]
                 for obj in bucket.objects.all():
-                    size,power_label = self.format_bytes(obj.size)
-                    d[bucket_name].append([obj.key,str(size)+' '+power_label,obj.last_modified.timestamp()])
+                    if obj.size <= size_list[0]:
+                        d_size[bucket_name][0] += obj.size
+                        d_size_num[bucket_name][0] += 1
+                        total_size[0] += obj.size
+                        total_size_num[0] += 1
+                    elif size_list[0] < obj.size <= size_list[1]:
+                        d_size[bucket_name][1] += obj.size
+                        d_size_num[bucket_name][1] += 1
+                        total_size[1] += obj.size
+                        total_size_num[1] += 1
+                    elif size_list[1] < obj.size <= size_list[2]:
+                        d_size[bucket_name][2] += obj.size
+                        d_size_num[bucket_name][2] += 1
+                        total_size[2] += obj.size
+                        total_size_num[2] += 1
+                    elif size_list[2] < obj.size <= size_list[3]:
+                        d_size[bucket_name][3] += obj.size
+                        d_size_num[bucket_name][3] += 1
+                        total_size[3] += obj.size
+                        total_size_num[3] += 1
+                    else:
+                        d_size[bucket_name][4] += obj.size
+                        d_size_num[bucket_name][4] += 1
+                        total_size[4] += obj.size
+                        total_size_num[4] += 1
+                    
+                    diff = now - obj.last_modified.timestamp()
+                    
+                    if diff <= last_list[0]:
+                        d_last[bucket_name][0] += obj.size
+                        d_last_num[bucket_name][0] += 1
+                        total_last[0] += obj.size
+                        total_last_num[0] += 1
+                    elif last_list[0] < diff <= last_list[1]:
+                        d_last[bucket_name][1] += obj.size
+                        d_last_num[bucket_name][1] += 1
+                        total_last[1] += obj.size
+                        total_last_num[1] += 1
+                    elif last_list[1] < diff <= last_list[2]:
+                        d_last[bucket_name][2] += obj.size
+                        d_last_num[bucket_name][2] += 1
+                        total_last[2] += obj.size
+                        total_last_num[2] += 1
+                    elif last_list[2] < diff <= last_list[3]:
+                        d_last[bucket_name][3] += obj.size
+                        d_last_num[bucket_name][3] += 1
+                        total_last[3] += obj.size
+                        total_last_num[3] += 1
+                    else:
+                        d_last[bucket_name][4] += obj.size
+                        d_last_num[bucket_name][4] += 1
+                        total_last[4] += obj.size
+                        total_last_num[4] += 1
+
         except Exception as e:
             print('other error',e)
             status = {'Error':{'Message':str(e)}}
             return status,''
         else:
             status = True
+            d = {'total_size':total_size,'total_size_num':total_size_num,'total_last':total_last,'total_last_num':total_last_num}
+            for key in d:
+                for val in d[key]:
+                    d[key][5] += val
+                d[key][5] = d[key][5] / 2
+
             return status,d
 
     def multi_upload(self,bucket_name,file_name,filepath,uuid,i):

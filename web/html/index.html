@@ -9,6 +9,8 @@
     <link  href="/static/css/modal.css" rel="stylesheet" >
     <link  href="/static/css/loading.css" rel="stylesheet" >
     <link href="/static/css/datatables.min.css" rel="stylesheet">
+    <link href="/static/css/nv.d3.css" rel="stylesheet">
+    <link href="/static/css/dashboard.css" rel="stylesheet">
     <script src="/static/js/jquery-2.2.4.min.js"></script>
     <script src="/static/js/jquery-3.3.1.js"></script>
     <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
@@ -17,8 +19,11 @@
     <script src="/static/js/datatables.min.js"></script>
     <script src="/static/js/file-size.js"></script>
     <script src="/static/js/moment-with-locales.js"></script>
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/nv.d3.min.js"></script>
     <script src="/static/js/bucket_list.js"></script>
     <script src="/static/js/obj_util.js"></script>
+    <script src="/static/js/analysis.js"></script>
   </head>
   <div class="modal fade" id="progress_modal">
     <div class="modal-dialog">
@@ -34,7 +39,7 @@
         </body>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-primary data-dismiss="modal">Close</button>
           
         </div>
       </div><!-- /.modal-content -->
@@ -52,8 +57,23 @@
           <input type="text" id="create_bucket_text" class="form-control">
         <div class="modal-footer">
           <button type="button" class="btn btn-primary" id="create_bucket_text_input" data-dismiss="modal">Create</button>
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
           
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <div class="modal fade" id="initial_connect">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">CONNECT TO Objects</h4>
+          <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
+        </div>
+        <button id="connect_objects" type="button" class="btn btn-primary"></button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -72,16 +92,24 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-
+          <ul class="navbar-nav">
+            <li class="nav-item" id="nav-list">
+              <a class="nav-link" href="javascript:back_to_bucket_list">Bucket/Object List</a>
+            </li>
+            <li class="nav-item" id="nav-analysis">
+              <a class="nav-link" href="javascript:graph">Analysis</a>
+            </li>
+          </ul>
         </div>
       </nav>
 
   <div class="container">
   <div class="row">
   <div class="col-12">
-    <button id="connect_objects" type="button" class="btn btn-primary btn-large"></button>
+    <!--
     <button id="test" type="button" class="btn btn-primary btn-large">test</button>
     <button id="test1" type="button" class="btn btn-primary btn-large">test</button>
+    -->
     <div id="bucket_list_wrapper" style="display: none">
       <h4 id="viewing_num">Viewing all Buckets</h4>
       <button id="create_bucket_button" class="btn btn-outline-primary">CREATE BUCKET</button>
@@ -127,6 +155,45 @@
         </tbody>
       </table>
     </div>
+
+    <div id="analysis_wrapper" style="display: none">
+      <div class="dashboard-flex-container">
+
+        <div class="dashboard-graph">
+          <h4>File Distribution by Size</h4>
+          <div id="size_chart1" class="svg-area">
+              <svg></svg>
+          </div>
+        </div>
+
+        <div class="dashboard-graph">
+          <h4>Data Age</h4>
+            <div id="last_modified_chart1" class="svg-area">
+              <svg></svg>
+            </div>
+        </div>
+
+      </div>
+
+      <div class="dashboard-flex-container">
+
+        <div class="dashboard-graph">
+          <h4>File Distribution by Size</h4>
+          <div id="size_chart2" class="svg-area">
+              <svg></svg>
+          </div>
+        </div>
+
+        <div class="dashboard-graph">
+          <h4>Data Age</h4>
+            <div id="last_modified_chart2" class="svg-area">
+              <svg></svg>
+            </div>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -144,6 +211,8 @@
   $('#connect_objects').click(connect_objects)
   $('#create_bucket_text_input').click(input_bucket_name)
   $('#reload_object_list').click(object_list_updated_wrapper)
+  $('#nav-analysis').click(graph_init)
+  $('#nav-list').click(back_to_bucket_list)
   $('#test').click(test)
   $('#test1').click(test1)
 

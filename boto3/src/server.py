@@ -211,8 +211,8 @@ def dummy():
 
 @app.route('/api/v1/test/',methods=['GET'])
 def test():
-    OBJECT_BOTO3.init_test()
-    return jsonify({}),200
+    status,d = OBJECT_BOTO3.get_object_info()
+    return jsonify(d),200
 
 #
 # util

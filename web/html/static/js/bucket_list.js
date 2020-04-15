@@ -259,6 +259,8 @@ let bucket_list_updated = function(){
 
 let back_to_bucket_list = function(){
   $('#object_list_wrapper').hide()
+  $('#analysis_wrapper').hide()
+  graph_clear()
   $('input[name=o_chk]').prop('checked',false)
   $('#bucket_table').DataTable().ajax.reload()
   $('#bucket_list_wrapper').show()
@@ -270,6 +272,8 @@ let bucket_clicked = function(bucket_name){
   $('#object_table').DataTable().ajax.reload(function(){
     $('#object_list_wrapper').val(bucket_name)
     $('#bucket_list_wrapper').hide()
+    $('#analysis_wrapper').hide()
+    graph_clear()
     $('input[name=b_chk]').prop('checked',false)
     $('#object_list_wrapper').show()
     $('#object_table').DataTable().columns.adjust()
@@ -286,9 +290,10 @@ let object_list_updated_wrapper = function(){
   object_list_updated(bucket_name)
 }
 let get_server_info = function(){
+  $('#initial_connect').modal('show')
   $.ajax({type:'put', url:'/api/v1/connect/',
     success: function(j){
-      $('#connect_objects').text('Connect to '+j['endpoint_url'])
+      $('#connect_objects').text('Click Here to Connect to '+j['endpoint_url'])
     },
     error: function(j){
       alert(j['responseJSON']['error'])
@@ -296,6 +301,7 @@ let get_server_info = function(){
   })
 }
 let connect_objects = function(){
+  
   var button = $(this);
   button.attr("disabled", true)
   dispLoading($('#connect_objects').text().replace('Connect','Connecting'))
@@ -305,6 +311,7 @@ let connect_objects = function(){
       Initialize_datatables()     
       removeLoading()
       button.attr("disabled", false)
+      $('#initial_connect').modal('hide')
       $('#bucket_table').DataTable().ajax.url('/api/v1/bucket/info/')
       $('#bucket_table').DataTable().ajax.reload(function(){
         $('#bucket_list_wrapper').show()
