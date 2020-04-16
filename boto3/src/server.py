@@ -44,6 +44,11 @@ def connect_to_objects():
 # Bucket
 #
 
+@app.route('/api/v1/get_info/',methods=['GET'])
+def get_info():
+    status,d = OBJECT_BOTO3.get_object_info()
+    return jsonify(d),200
+
 @app.route('/api/v1/bucket/',methods=['GET'])
 def bucket_list():
     status,b_list = OBJECT_BOTO3.list_bucket()

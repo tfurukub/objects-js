@@ -8,17 +8,19 @@ let graph_init = function(){
         var timer1 = setInterval(function(){
             if($('#analysis_wrapper').find('.nvd3-svg').length == 0){
                 clearInterval(timer1)
-                $.ajax({type:'get', url:'/api/v1/test/',
+                $.ajax({type:'get', url:'/api/v1/get_info/',
                     success:function(j){
+                        create_top5_ranking(j)
                         graph(j)
                     }
                 })
             }
         },500)
     }else{
-        $.ajax({type:'get', url:'/api/v1/test/',
+        $.ajax({type:'get', url:'/api/v1/get_info/',
             success:function(j){
                 graph(j)
+                create_top5_ranking(j)
             }
         })
     }
@@ -32,8 +34,7 @@ let graph = function(j){
     object_size_num = d1.object_size_num
     last_modified_size = d1.last_modified_size
     last_modified_num = d1.last_modified_num
-    console.log(object_size)
-
+    
     nv.addGraph(function (){
         var chart = nv.models.multiBarHorizontalChart().x(function (d) {
             return d.label; // Configure x axis to use the "label" within the json.
@@ -78,7 +79,7 @@ let graph = function(j){
         return
       })
 
-      nv.addGraph(function (){
+    nv.addGraph(function (){
         var chart = nv.models.multiBarHorizontalChart().x(function (d) {
             return d.label; // Configure x axis to use the "label" within the json.
         })
@@ -243,4 +244,47 @@ var last_modified_num = [
         "value":d.total_last_num[4]
 }]
     return {'object_size':object_size,'object_size_num':object_size_num,'last_modified_size':last_modified_size,'last_modified_num':last_modified_num}
+}
+
+let create_top5_ranking = function(j){
+
+    top5_size_order = []
+    top5_new_order = []
+    top5_old_order = []
+    
+    Object.keys(j.top5_size).sort(function(a, b){
+        return j.top5_size[b] - j.top5_size[a]
+    }).forEach(function(key) {
+        top5_size_order.push(key)
+    })
+    Object.keys(j.top5_old).sort(function(a, b){
+        return j.top5_old[b] - j.top5_old[a]
+    }).forEach(function(key) {
+        top5_old_order.push(key)
+    })
+    Object.keys(j.top5_new).sort(function(a, b){
+        return j.top5_new[b] - j.top5_new[a]
+    }).forEach(function(key) {
+        top5_new_order.push(key)
+    })
+
+    txt = ''
+    for(i=0;i<=4;i++){
+        txt += '<tr><td>'+top5_size_order[i]+'</td><td>'+convertByteSize(j.top5_size[top5_size_order[i]])+'</td></tr>'
+    }
+    $('#top5_size_list').html(txt)
+
+    txt = ''
+    for(i=0;i<=4;i++){
+        m = moment.unix(j.top5_old[top5_old_order[i]]).format("LLLL")
+        txt += '<tr><td>'+top5_old_order[i]+'</td><td>'+ m +'</td></tr>'
+    }
+    $('#top5_old_list').html(txt)
+
+    txt = ''
+    for(i=0;i<=4;i++){
+        m = moment.unix(j.top5_new[top5_new_order[i]]).format("LLLL")
+        txt += '<tr><td>'+top5_new_order[i]+'</td><td>'+ m +'</td></tr>'
+    }
+    $('#top5_new_list').html(txt)    
 }

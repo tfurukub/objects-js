@@ -39,7 +39,7 @@
         </body>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-primary data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
           
         </div>
       </div><!-- /.modal-content -->
@@ -82,7 +82,7 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark" 
         style="background-color: #22272E; margin-bottom: 25px">
-        <a class="navbar-brand" href="/">
+        <a id="back_to_dashboard" class="navbar-brand" href="javascript:void(0)" onclick="graph_init()">
             Objects
         </a>
 
@@ -93,11 +93,11 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav">
-            <li class="nav-item" id="nav-list">
-              <a class="nav-link" href="javascript:back_to_bucket_list">Bucket/Object List</a>
-            </li>
             <li class="nav-item" id="nav-analysis">
-              <a class="nav-link" href="javascript:graph">Analysis</a>
+              <a class="nav-link" href="javascript:void(0)" onclick="graph_init()">Dashboard</a>
+            </li>
+            <li class="nav-item" id="nav-list">
+              <a class="nav-link" href="javascript:void(0)" onclick="back_to_bucket_list()">Bucket/Object List</a>
             </li>
           </ul>
         </div>
@@ -193,6 +193,50 @@
 
       </div>
 
+      <div id="top5_ranking" class="dashboard-flex-container">
+        <div class="dashboard-graph">
+          <h4>Top 5 Large Files</h4>
+          <table class="table" style="width:100%">
+            <thead>
+            <tr>
+              <th>Key</th>
+              <th>Size</th>
+            </tr>
+            </thead>
+            <tbody id="top5_size_list">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="dashboard-graph">
+          <h4>Top 5 Old Files</h4>
+          <table class="table" style="width:100%">
+            <thead>
+            <tr>
+              <th>Key</th>
+              <th>Data Age</th>
+            </tr>
+            </thead>
+            <tbody id="top5_old_list">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="dashboard-graph">
+          <h4>Top 5 New Files</h4>
+          <table class="table" style="width:100%">
+            <thead>
+            <tr>
+              <th>Key</th>
+              <th>Data Age</th>
+            </tr>
+            </thead>
+            <tbody id="top5_new_list">
+            </tbody>
+          </table>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
@@ -212,6 +256,7 @@
   $('#create_bucket_text_input').click(input_bucket_name)
   $('#reload_object_list').click(object_list_updated_wrapper)
   $('#nav-analysis').click(graph_init)
+  $('#back_to_dashboard').click(graph_init)
   $('#nav-list').click(back_to_bucket_list)
   $('#test').click(test)
   $('#test1').click(test1)

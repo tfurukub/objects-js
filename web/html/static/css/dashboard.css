@@ -7,7 +7,6 @@
 .dashboard-flex-container {
     display: flex;
     width: 100%;
-    flex-wrap: wrap;
 }
 
 .svg-area{

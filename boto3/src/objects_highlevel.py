@@ -162,6 +162,7 @@ class Objects_boto3():
         d_size_num = {}
         d_last = {}
         d_last_num = {}
+
         k = 1024
         m = k*1024
         g = m*1024
@@ -178,7 +179,9 @@ class Objects_boto3():
         total_size_num = [0,0,0,0,0,0]
         total_last = [0,0,0,0,0,0]
         total_last_num = [0,0,0,0,0,0]
-
+        full_list_size = {}
+        full_list_last = {}
+        
         try:
             status, bucket_list = self.list_bucket()
             for bucket_name in bucket_list:
@@ -188,6 +191,14 @@ class Objects_boto3():
                 d_size_num[bucket_name] = [0,0,0,0,0,0]
                 d_last_num[bucket_name] = [0,0,0,0,0,0]
                 for obj in bucket.objects.all():
+                    if obj.key in full_list_size:
+                        if obj.size > full_list_size[obj.key]:
+                            full_list_size[obj.key] = obj.size
+                    else:
+                        full_list_size[obj.key] = obj.size
+                    
+                    full_list_last[obj.key] = obj.last_modified.timestamp()
+
                     if obj.size <= size_list[0]:
                         d_size[bucket_name][0] += obj.size
                         d_size_num[bucket_name][0] += 1
@@ -253,7 +264,40 @@ class Objects_boto3():
                 for val in d[key]:
                     d[key][5] += val
                 d[key][5] = d[key][5] / 2
+            
+            full_list_size_sorted = sorted(full_list_size.items(), key=lambda x:x[1],reverse=True)
+            full_list_last_sorted_old = sorted(full_list_last.items(), key=lambda x:x[1])
+            full_list_last_sorted_new = sorted(full_list_last.items(), key=lambda x:x[1],reverse=True)
 
+            top5_size = {}
+            top5_old = {}
+            top5_new = {}
+
+            i = 1
+            for key in full_list_size_sorted:
+                if i > 5:
+                    break
+                top5_size[key[0]] = key[1]
+                i += 1
+            
+            i = 1
+            for key in full_list_last_sorted_old:
+                if i > 5:
+                    break
+                top5_old[key[0]] = key[1]
+                i += 1
+            
+            i = 1
+            for key in full_list_last_sorted_new:
+                if i > 5:
+                    break
+                top5_new[key[0]] = key[1]
+                i += 1
+            
+            d['top5_size'] = top5_size
+            d['top5_old'] = top5_old
+            d['top5_new'] = top5_new
+            
             return status,d
 
     def multi_upload(self,bucket_name,file_name,filepath,uuid,i):

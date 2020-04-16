@@ -304,7 +304,7 @@ let connect_objects = function(){
   
   var button = $(this);
   button.attr("disabled", true)
-  dispLoading($('#connect_objects').text().replace('Connect','Connecting'))
+  dispLoading($('#connect_objects').text().replace('Connect','Connecting').replace('Click Here to ',''))
   
   $.ajax({type:'get', url:'/api/v1/bucket/',
     success:function(j, status, xhr){
@@ -314,8 +314,8 @@ let connect_objects = function(){
       $('#initial_connect').modal('hide')
       $('#bucket_table').DataTable().ajax.url('/api/v1/bucket/info/')
       $('#bucket_table').DataTable().ajax.reload(function(){
-        $('#bucket_list_wrapper').show()
         $('#bucket_table').DataTable().columns.adjust()
+        graph_init()
       })
     }, 
     error:function(j,status){
@@ -328,6 +328,7 @@ let Initialize_datatables = function(){
    // Initialize DataTables
    $('#bucket_table').DataTable({
     "ajax": '/api/v1/dummy/',
+    lengthMenu: [[10,25,50,100,-1],[10,25,50,100,"ALL"]],
     'columnDefs': [{
         'targets': 0,
         'width': '10px',
@@ -340,9 +341,6 @@ let Initialize_datatables = function(){
      },
      {
       'targets': 1,
-      //'searchable': false,
-      //'orderable': false,
-      //'className': 'dt-body-center',
       'render': function (data){
           return '<a href=\"javascript:bucket_clicked(\''+data+'\')\">'+data+'</a>'
       }
@@ -353,6 +351,7 @@ let Initialize_datatables = function(){
 
   $('#object_table').DataTable({
     "ajax": '/api/v1/dummy/',
+    lengthMenu: [[10,25,50,100,-1],[10,25,50,100,"ALL"]],
     'columnDefs': [{
         'targets': 0,
         'width': '10px',
@@ -370,7 +369,6 @@ let Initialize_datatables = function(){
       {
         'targets': 3,
         'render': function (data){
-          moment.locale("ja")
           m = moment.unix(data).format("LLLL")
           return '<p style="display: none">' + data + '</p>' + m
         }
