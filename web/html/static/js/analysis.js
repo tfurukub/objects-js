@@ -27,8 +27,6 @@ let graph_init = function(){
 }
 
 let graph = function(j){
-    console.log(j)
-    
     d1 = createData(j)
     object_size = d1.object_size
     object_size_num = d1.object_size_num
