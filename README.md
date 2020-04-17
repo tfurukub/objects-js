@@ -7,7 +7,7 @@ Overview
 - Upload/Download of Multiple Objects
 
 ## Install
-1. rename "dummy.json" to "secret.json"
+1. rename "dummy.json" in ./boto3/src to "secret.json"
 2. Input the correct information of Nutanix Objects in "secret.json"
 3. On Docker VM, git clone https://github.com/tfurukub/objects-js
 4. cd ./objects-js
