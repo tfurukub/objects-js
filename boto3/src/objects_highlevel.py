@@ -39,10 +39,11 @@ class ProgressPercentage(object):
             print('percentage2 = ',self._per[self._uuid]['p'],self._file_name)
 
 class Objects_boto3():
-    def __init__(self,accesskey,secretkey,endpoint):
+    def __init__(self,accesskey,secretkey,endpoint,region):
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
+        self.region = region
         self.per = {}
         self.mpu_id = {}
         self.parts = {}
@@ -340,12 +341,13 @@ class Objects_boto3():
         result = self.s3resource.Object(bucket_name,file_name).delete()
         return result
 
-    def update_info(self,accesskey,secretkey,endpoint):
+    def update_info(self,accesskey,secretkey,endpoint,region):
         self.accesskey = accesskey
         self.secretkey = secretkey
         self.endpoint = endpoint
+        self.region = region
         self.session = Session(aws_access_key_id=self.accesskey,aws_secret_access_key=self.secretkey)
-        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint,region_name='us-east-1')
+        self.s3resource = self.session.resource('s3',endpoint_url=self.endpoint,region_name=region)
         self.s3client = self.s3resource.meta.client
 
     def format_bytes(self,size):

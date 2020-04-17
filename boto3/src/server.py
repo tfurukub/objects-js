@@ -11,6 +11,7 @@ import objects_highlevel
 ACCESS_KEY = ''
 SECRET_KEY = ''
 ENDPOINT_URL = 'http://0.0.0.0'
+REGION = 'us-east-1'
 UPLOAD_SAVE_DIR = '/src/upload/'
 DOWNLOAD_SAVE_DIR = '/src/download/'
 SECRET_FILE = 'secret.json'
@@ -20,7 +21,7 @@ SECRET_FILE = 'secret.json'
 
 
 
-OBJECT_BOTO3 = objects_highlevel.Objects_boto3(ACCESS_KEY,SECRET_KEY,ENDPOINT_URL)
+OBJECT_BOTO3 = objects_highlevel.Objects_boto3(ACCESS_KEY,SECRET_KEY,ENDPOINT_URL,REGION)
 app = Flask('pdf creator')
 
 #
@@ -34,7 +35,7 @@ def connect_to_objects():
     if os.path.isfile(os.path.join('/src/',SECRET_FILE)):
         with open(os.path.join('/src/',SECRET_FILE),'r') as f:
             d = json.load(f)
-            OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'])
+            OBJECT_BOTO3.update_info(d['access_key'],d['secret_key'],d['endpoint_url'],d['region'])
             return jsonify(d),200
     else:
         return jsonify({'error':'AWS key file (secret.json) does not exist'}),500
@@ -65,7 +66,6 @@ def bucket_info():
     if status == True:
         #d = {'size':size_list,'num':num_list}
         d = {"data":data}
-        print(d)
         return jsonify(d),200
     else:
         response = make_response(json.dumps(status),500)
